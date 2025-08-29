@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>示波器内部原理</title>
+  <style>
+    body { margin: 0; overflow: hidden; }
+    #info {
+      position: absolute;
+      top: 0; width: 100%; padding: .5rem;
+      background: rgba(0,0,0,.5); color: #fff; text-align: center;
+      font-family: sans-serif;
+      height: 5%;
+    }
+    .dg.main {
+      position: absolute;
+      top: 80px;
+      right: 0;
+    }
+    .dg.main .close-button {
+      position: relative;
+      line-height: 19px;
+    }
+    #switch-to-external { display:none; }
+  </style>
+  <!-- Webpack 会在此页自动注入内部原理所需的 bundle 脚本 -->
+  <!-- 注意：此页专属于"内部原理"三维演示，互不干扰 -->
+</head>
+<body>
+  <div id="info">鼠标拖动旋转，滚轮缩放观察模型</div>
+  
+  <!-- switcher 初始化移至 JS（main.js）中集中管理 -->
+</body>
+<!-- 其余脚本由 HtmlWebpackPlugin 自动注入 -->
+</html>
+
+
