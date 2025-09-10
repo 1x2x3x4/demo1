@@ -49,6 +49,9 @@ function init() {
   console.log('初始化UI控制器...');
   initUIController(); // 初始化UI控制器
   
+  // 初始化波形显示
+  updateScreenWaveform();
+  
   // 开始动画循环
   animate(); // 开始动画循环
   
@@ -268,6 +271,7 @@ function initDemoAnimation() {
       },
       onWaveformChange: (waveformParams) => {
         updateElectronBeam();
+        updateScreenWaveform();
       }
     }
   );
@@ -285,6 +289,8 @@ function initGui() {
     onWaveformChange: (waveformParams) => {
       // 波形参数变化时，需要更新电子束
       updateElectronBeam();
+      // 同时更新荧光屏上的波形显示
+      updateScreenWaveform();
     },
     onScreenChange: (screenParams) => {
       screenController.updateMaterial();
@@ -321,6 +327,7 @@ function initUIController() {
       },
       onWaveformChange: (waveformParams) => {
         updateElectronBeam();
+        updateScreenWaveform();
       }
     }
   });
@@ -350,6 +357,31 @@ function updateElectronBeam() {
   
   // 更新荧光屏和动态光点
   updateScreenAndGlowPoint();
+}
+
+/**
+ * 更新荧光屏波形显示
+ */
+function updateScreenWaveform() {
+  if (screenController && CONFIG.waveform.enabled) {
+    // 将GUI参数同步到Screen.js
+    screenController.setWaveformType(CONFIG.waveform.type);
+    screenController.setFrequency(CONFIG.waveform.frequency);
+    screenController.setAmplitude(CONFIG.waveform.amplitude);
+    screenController.setPhase(CONFIG.waveform.phase);
+    
+    // 显示波形
+    screenController.showWaveform(true);
+    
+    // 如果启用了动画，开始波形动画
+    if (!screenController.isWaveformAnimating) {
+      screenController.startWaveformAnimation();
+    }
+  } else if (screenController) {
+    // 隐藏波形
+    screenController.showWaveform(false);
+    screenController.stopWaveformAnimation();
+  }
 }
 
 /**
@@ -449,3 +481,4 @@ if (typeof document !== 'undefined' && document.readyState === 'loading') {
 } else {
   bootInternalSwitcher();
 }
+

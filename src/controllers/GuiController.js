@@ -3,7 +3,7 @@ import { CONFIG, WAVEFORM_TYPES } from '../config';
 
 export class GuiController {
   constructor(callbacks = {}) {
-    this.gui = new dat.GUI({ width: 300 });
+    this.gui = new dat.GUI({ width: 400 });
     this.callbacks = callbacks;
     
     // 保存回调函数

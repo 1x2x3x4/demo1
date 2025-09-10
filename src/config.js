@@ -256,5 +256,7 @@ export const WAVEFORM_TYPES = {
   sine: '正弦波',
   square: '方波',
   sawtooth: '锯齿波',
-  triangle: '三角波'
+  triangle: '三角波',
+  pulse: '脉冲波',
+  noise: '噪声'
 }; 
