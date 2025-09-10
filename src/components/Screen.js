@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { CONFIG } from '../config';
+import { CONFIG } from '../configLoader';
 
 /**
  * 荧光屏类

@@ -1,5 +1,5 @@
 import * as dat from 'dat.gui';
-import { CONFIG } from '../config';
+import { CONFIG } from '../configLoader';
 
 /**
  * UI控制器类

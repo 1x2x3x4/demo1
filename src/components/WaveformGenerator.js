@@ -75,7 +75,14 @@ export class WaveformGenerator {
     // 生成波形值
     const waveValue = this.generateWaveform(waveformParams);
     
+    // 调试信息
+    if (Math.abs(waveValue) > 0.01) {
+      console.log('波形生成器 - 波形值:', waveValue.toFixed(3), 
+                  '基础电压:', baseHorizontal.toFixed(2), baseVertical.toFixed(2));
+    }
+    
     // 计算最终电压 (基础电压 + 波形值)
+    // 波形主要影响水平偏转，创造扫描效果
     return {
       horizontal: baseHorizontal + waveValue,
       vertical: baseVertical

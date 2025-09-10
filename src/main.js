@@ -8,7 +8,7 @@ import { renderSwitcher } from '../src/widgets/switcher.js';
 
 
 // ===== 导入自定义模块 =====
-import { CONFIG } from './config';  // 配置文件
+import { CONFIG } from './configLoader';  // 配置文件
 import { GuiController } from './controllers/GuiController';  // GUI控制器
 import { UIController } from './controllers/UIController';  // UI控制器
 import { WaveformGenerator } from './components/WaveformGenerator';  // 波形生成器
@@ -23,7 +23,23 @@ let scene, camera, renderer, controls;  // 场景、相机、渲染器、控制�
 let electronBeam, waveformGenerator, screenController;  // 电子束、波形生成器、荧光屏控制器
 let guiController, uiController;  // GUI控制器、UI控制器
 let labelSystem, explodedView, demoAnimation;  // 标签系统、分解视图、演示动画
-let dynamicGlowPoint;  // 动态光点（跟随电子束击中位置）
+
+// 创建 TWEEN Group 管理动画（解决 TWEEN.update() 弃用问题）
+export const tweenGroup = new TWEEN.Group();
+
+// ===== 热重载支持 =====
+if (module.hot) {
+  module.hot.accept('./configLoader', () => {
+    console.log('配置文件已更新，重新加载...');
+    // 重新初始化组件以应用新配置
+    if (electronBeam) electronBeam.updateMaterial();
+    if (screenController) screenController.updateMaterial();
+  });
+  
+  module.hot.accept(['./components/ElectronBeam', './components/Screen', './components/WaveformGenerator'], () => {
+    console.log('组件已更新，重新加载...');
+  });
+}
 
 // ===== 场景对象引用 =====
 let gun, gunHead, v1, v2, h1, h2, screen;  // 电子枪、电子枪头、垂直偏转板、水平偏转板、荧光屏    
@@ -51,6 +67,9 @@ function init() {
   
   // 初始化波形显示
   updateScreenWaveform();
+  
+  // 初始化电子束（确保启动时就有电子束显示）
+  updateElectronBeam();
   
   // 开始动画循环
   animate(); // 开始动画循环
@@ -195,12 +214,6 @@ function initComponents() {
   screen.rotation.y = -Math.PI / 2; // 设置荧光屏旋转
   scene.add(screen); // 将荧光屏添加到场景中
    
-  // 创建动态光点（跟随电子束击中位置）
-  const dynamicGlowGeometry = new THREE.SphereGeometry(CONFIG.components.dynamicGlow.radius, 16, 16);
-  dynamicGlowPoint = new THREE.Mesh(dynamicGlowGeometry, glowPointMat);
-  // 初始位置设为屏幕中心
-  dynamicGlowPoint.position.set(CONFIG.components.screen.position.x, CONFIG.components.screen.position.y, CONFIG.components.screen.position.z);
-  scene.add(dynamicGlowPoint);
   
   // 初始化电子束控制器
   electronBeam = new ElectronBeam(scene);
@@ -294,10 +307,6 @@ function initGui() {
     },
     onScreenChange: (screenParams) => {
       screenController.updateMaterial();
-      // 更新动态光点颜色
-      if (dynamicGlowPoint) {
-        dynamicGlowPoint.material.color.set(CONFIG.dotLight.color);
-      }
     }
   });
 }
@@ -393,13 +402,6 @@ function updateScreenAndGlowPoint() {
   // 更新荧光屏上的点
   screenController.addGlowPoint(lastBeamPoint);
   
-  // 更新动态光点位置到电子束击中位置
-  if (dynamicGlowPoint) {
-    dynamicGlowPoint.position.copy(lastBeamPoint);
-    // 确保光点在屏幕前面一点点，避免z-fighting
-    const zFightingOffset = CONFIG.electronBeam.zFightingOffset;
-    dynamicGlowPoint.position.x = CONFIG.components.screen.position.x - zFightingOffset;
-  }
 }
 
 // ===== 窗口大小调整 =====
@@ -429,21 +431,13 @@ function animate(timestamp) {
   // 更新波形生成器
   waveformGenerator.update(timestamp);
   
-  // 如果波形启用，更新电子束
-  if (CONFIG.waveform.enabled) {
-    updateElectronBeam();
-  }
+  // 持续更新电子束（无论波形是否启用都要更新）
+  // 这确保了电子束始终可见并响应参数变化
+  updateElectronBeam();
   
   // 更新荧光屏效果
   screenController.update();
   
-  // 更新动态光点的脉冲效果
-  if (dynamicGlowPoint) {
-    // 创建脉冲效果 - 使用正弦波使光点大小和亮度呼吸
-    const pulse = Math.sin(timestamp * 0.003) * 0.2 + 0.8;
-    dynamicGlowPoint.scale.set(pulse, pulse, pulse);
-    dynamicGlowPoint.material.opacity = pulse * 0.8;
-  }
   
   // 更新分解视图
   if (explodedView) {
@@ -460,8 +454,8 @@ function animate(timestamp) {
     labelSystem.update(camera);
   }
   
-  // 更新TWEEN
-  TWEEN.update();
+  // 更新TWEEN（使用新的 Group API）
+  tweenGroup.update();
   
   // 渲染场景
   renderer.render(scene, camera);

@@ -4,7 +4,8 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "set NODE_ENV=development && webpack serve --config webpack.config.js",
+    "dev": "set NODE_ENV=development && webpack serve --config webpack.config.js --hot",
+    "start": "npm run dev",
     "build": "set NODE_ENV=production && webpack --config webpack.config.js --mode production"
   },
   "keywords": [],

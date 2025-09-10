@@ -1,5 +1,5 @@
 import * as dat from 'dat.gui';
-import { CONFIG, WAVEFORM_TYPES } from '../config';
+import { CONFIG, WAVEFORM_TYPES } from '../configLoader';
 
 export class GuiController {
   constructor(callbacks = {}) {

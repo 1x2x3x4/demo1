@@ -8,28 +8,32 @@ const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const isDev = process.env.NODE_ENV !== 'production';
 
 module.exports = {
-  mode: 'development',          // 或 'production'
-  cache: false,
+  mode: isDev ? 'development' : 'production',
+  cache: isDev,
   entry: {
     internal: './src/main.js',
     external: './src/external.js',
   },
   output: {
-    filename: 'js/[name].bundle.[contenthash].js',  // JS 文件放到 js 文件夹
+    filename: isDev ? 'js/[name].bundle.js' : 'js/[name].bundle.[contenthash].js',
     path: path.resolve(__dirname, 'docs'),   // 构建输出目录
-    publicPath: './',                        // 使用相对路径，支持直接打开文件
-    clean: true,
+    publicPath: isDev ? '/' : './',          // 开发模式使用绝对路径，生产模式使用相对路径
+    clean: !isDev,                          // 开发模式不清理，避免影响热重载
   },
-  devtool: 'source-map',
+  devtool: isDev ? 'eval-cheap-module-source-map' : 'source-map',
   devServer: {
-    // dev-server 会把构建产物放在内存中从"服务器根"提供；static 只用于磁盘上的额外静态文件
     static: [
-      { directory: path.resolve(__dirname, 'docs') }, // 访问 docs 中的静态文件
-      { directory: path.resolve(__dirname, '.') },    // 根目录下的 /CDN /public /TourGuide 等
+      { directory: path.resolve(__dirname, 'docs') },
+      { directory: path.resolve(__dirname, 'public') },
+      { directory: path.resolve(__dirname, 'CDN') },
     ],
     hot: true,
-    open: ['index.html'],      // 本地直接打开 index.html
+    liveReload: true,
+    watchFiles: ['src/**/*', 'public/**/*'],  // 监听文件变化
+    open: ['index.html'],
     port: 8081,
+    compress: true,
+    historyApiFallback: true,
   },
   plugins: [
     // CSS 提取插件

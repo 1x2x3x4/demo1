@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import * as TWEEN from '@tweenjs/tween.js';
-import { CONFIG } from '../config.js';
+import { CONFIG } from '../configLoader.js';
+import { tweenGroup } from '../main.js';
 
 /**
  * 分解视图类
@@ -105,7 +106,7 @@ export class ExplodedView {
         : originalPosition.clone();
       
       // 创建位置动画
-      const tween = new TWEEN.Tween(object.position)
+      const tween = new TWEEN.Tween(object.position, tweenGroup)
         .to({
           x: targetPosition.x,
           y: targetPosition.y,
@@ -159,7 +160,7 @@ export class ExplodedView {
     });
     
     // 创建相机位置动画
-    const posTween = new TWEEN.Tween(camera.position)
+    const posTween = new TWEEN.Tween(camera.position, tweenGroup)
       .to({
         x: targetPosition.x + offset.x,
         y: targetPosition.y + offset.y,
@@ -169,7 +170,7 @@ export class ExplodedView {
       .start();
     
     // 创建控制器目标点动画
-    const targetTween = new TWEEN.Tween(controls.target)
+    const targetTween = new TWEEN.Tween(controls.target, tweenGroup)
       .to({
         x: targetPosition.x,
         y: targetPosition.y,
@@ -229,7 +230,7 @@ export class ExplodedView {
    */
   resetView(camera, controls, duration = CONFIG.explodedView.animationDuration) {
     // 重置相机位置
-    const posTween = new TWEEN.Tween(camera.position)
+    const posTween = new TWEEN.Tween(camera.position, tweenGroup)
       .to({ 
         x: CONFIG.camera.position.x, 
         y: CONFIG.camera.position.y, 
@@ -239,7 +240,7 @@ export class ExplodedView {
       .start();
     
     // 重置控制器目标点
-    const targetTween = new TWEEN.Tween(controls.target)
+    const targetTween = new TWEEN.Tween(controls.target, tweenGroup)
       .to({ 
         x: CONFIG.camera.target.x, 
         y: CONFIG.camera.target.y, 

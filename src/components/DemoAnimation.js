@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import * as TWEEN from '@tweenjs/tween.js';
-import { CONFIG } from '../config';
+import { CONFIG } from '../configLoader';
+import { tweenGroup } from '../main.js';
 
 /**
  * 演示动画类
@@ -321,7 +322,7 @@ export class DemoAnimation {
       );
       
       // 创建相机位置动画
-      const posTween = new TWEEN.Tween(this.controllers.camera.position)
+      const posTween = new TWEEN.Tween(this.controllers.camera.position, tweenGroup)
         .to({
           x: targetPosition.x + offset.x,
           y: targetPosition.y + offset.y,
@@ -332,7 +333,7 @@ export class DemoAnimation {
         .start();
       
       // 创建控制器目标点动画
-      const targetTween = new TWEEN.Tween(this.controllers.controls.target)
+      const targetTween = new TWEEN.Tween(this.controllers.controls.target, tweenGroup)
         .to({
           x: targetPosition.x,
           y: targetPosition.y,
@@ -352,7 +353,7 @@ export class DemoAnimation {
   resetView() {
     return new Promise(resolve => {
           // 重置相机位置
-    const posTween = new TWEEN.Tween(this.controllers.camera.position)
+    const posTween = new TWEEN.Tween(this.controllers.camera.position, tweenGroup)
       .to({ 
         x: CONFIG.camera.position.x, 
         y: CONFIG.camera.position.y, 
@@ -363,7 +364,7 @@ export class DemoAnimation {
       .start();
       
           // 重置控制器目标点
-    const targetTween = new TWEEN.Tween(this.controllers.controls.target)
+    const targetTween = new TWEEN.Tween(this.controllers.controls.target, tweenGroup)
       .to({ 
         x: CONFIG.camera.target.x, 
         y: CONFIG.camera.target.y, 
@@ -399,7 +400,7 @@ export class DemoAnimation {
       
       // 创建动画
       const delay = (i / count) * duration;
-      const tween = new TWEEN.Tween(particle.position)
+      const tween = new TWEEN.Tween(particle.position, tweenGroup)
         .to({
           x: endPos.x,
           y: endPos.y,
@@ -441,7 +442,7 @@ export class DemoAnimation {
     if (!deflection) return;
     
     // 创建电压变化动画
-    const tween = new TWEEN.Tween({ voltage: deflection.voltage })
+    const tween = new TWEEN.Tween({ voltage: deflection.voltage }, tweenGroup)
       .to({ voltage: targetVoltage }, duration)
       .easing(TWEEN.Easing.Quadratic.InOut)
       .onUpdate(obj => {
@@ -533,7 +534,7 @@ export class DemoAnimation {
     // 清理已完成的tweens
     this.tweens = this.tweens.filter(tween => tween && tween.isPlaying);
     
-    // 更新TWEEN
-    TWEEN.update();
+    // 更新TWEEN（使用新的 Group API）
+    tweenGroup.update();
   }
 } 

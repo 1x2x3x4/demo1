@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { CSS2DRenderer, CSS2DObject } from 'three/examples/jsm/renderers/CSS2DRenderer.js';
-import { CONFIG } from '../config.js';
+import { CONFIG } from '../configLoader.js';
 
 /**
  * 标签系统类
