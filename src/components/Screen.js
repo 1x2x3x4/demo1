@@ -21,34 +21,7 @@ export class Screen {
     this.glowMeshes = [];
     this.maxGlowPoints = CONFIG.screenEffects.maxGlowPoints;
     
-    // 波形相关属性
-    this.waveformGroup = new THREE.Group();
-    this.isWaveformAnimating = false;
-    this.animationId = null;
-    
-    // 波形配置
-    this.waveformConfig = {
-      segments: 1000,
-      lineWidth: 2,
-      color: 0x00ff00, // 绿色荧光
-      showWaveform: true
-    };
-    
-    // 视口参数
-    this.viewport = {
-      timeDiv: 1,
-      voltsDiv: 1,
-      horizontalPosition: 0,
-      verticalPosition: 0
-    };
-    
-    // 信号参数
-    this.signalParams = {
-      type: 'sine',
-      frequency: 1,
-      amplitude: 1,
-      phase: 0
-    };
+    // 移除了静态波形相关属性，保留电子束轨迹波形
     
     // 初始化荧光材质
     this.initGlowMaterial();
@@ -56,8 +29,7 @@ export class Screen {
     // 创建荧光屏网格
     this.createScreenGrid();
     
-    // 初始化波形功能
-    this.initWaveform();
+    // 移除了静态波形初始化
   }
   
   /**
@@ -70,18 +42,12 @@ export class Screen {
     
     // 创建荧光点材质
     this.glowMaterial = new THREE.MeshBasicMaterial({
-      color: CONFIG.screen.color,
+      color: CONFIG.beam.color, // 使用电子束的颜色（绿色）
       transparent: true,
       opacity: 0.8
     });
     
-    // 创建波形材质
-    this.waveformMaterial = new THREE.LineBasicMaterial({
-      color: this.waveformConfig.color,
-      linewidth: this.waveformConfig.lineWidth,
-      transparent: true,
-      opacity: 0.9
-    });
+    // 移除了静态波形材质
   }
   
   /**
@@ -136,80 +102,11 @@ export class Screen {
     this.scene.add(this.screenGrid);
   }
   
-  /**
-   * 初始化波形功能
-   */
-  initWaveform() {
-    // 将波形组添加到场景
-    this.scene.add(this.waveformGroup);
-    
-    // 创建初始波形
-    this.createWaveform();
-  }
+  // 移除了initWaveform方法
   
-  /**
-   * 创建波形
-   */
-  createWaveform() {
-    if (!this.waveformConfig.showWaveform) return;
-    
-    // 清除现有波形
-    this.waveformGroup.clear();
-    
-    // 创建单一波形
-    this.createSingleWaveform();
-  }
+  // 移除了createWaveform方法
   
-  /**
-   * 创建单一波形
-   */
-  createSingleWaveform() {
-    const points = [];
-    const segments = this.waveformConfig.segments;
-    
-    // 获取荧光屏尺寸
-    const screenWidth = CONFIG.components.screen.width;
-    const screenHeight = CONFIG.components.screen.height;
-    
-    // 获取波形参数
-    const waveType = this.signalParams.type;
-    const frequency = this.signalParams.frequency;
-    const amplitude = this.signalParams.amplitude;
-    const timeDiv = this.viewport.timeDiv;
-    const voltsDiv = this.viewport.voltsDiv;
-    
-    // 计算时间和电压范围
-    const totalTime = timeDiv * 10; // 10个时间分度
-    const maxVolts = 4 * voltsDiv; // 4个电压分度
-    
-    // 计算位置偏移
-    const horizontalOffset = this.viewport.horizontalPosition * timeDiv;
-    const verticalOffset = this.viewport.verticalPosition * (screenHeight / 8);
-    
-    // 生成波形点
-    for (let i = 0; i <= segments; i++) {
-      const t = (i / segments - 0.5) * totalTime - horizontalOffset;
-      const phaseVal = 2 * Math.PI * frequency * t + this.signalParams.phase;
-      const voltage = this.calculateVoltage(waveType, phaseVal, amplitude);
-      
-      const x = (i / segments - 0.5) * screenWidth;
-      const y = (voltage / maxVolts) * (screenHeight / 2) + verticalOffset;
-      const z = 0.02; // 稍微在荧光屏前面
-      
-      points.push(new THREE.Vector3(x, y, z));
-    }
-    
-    // 创建几何体和线条
-    const geometry = new THREE.BufferGeometry().setFromPoints(points);
-    const line = new THREE.Line(geometry, this.waveformMaterial);
-    
-    // 设置位置和旋转，与荧光屏对齐
-    line.position.copy(CONFIG.components.screen.position);
-    line.position.x += 0.02; // 在荧光屏前面一点点
-    line.rotation.y = -Math.PI / 2; // 与荧光屏相同的旋转
-    
-    this.waveformGroup.add(line);
-  }
+  // 移除了createSingleWaveform方法
   
   /**
    * 根据波形类型计算电压值
@@ -223,7 +120,7 @@ export class Screen {
       case 'sine':
         return amplitude * Math.sin(phaseVal);
       case 'square':
-        return amplitude * Math.sign(Math.sin(phaseVal));
+        return amplitude * (Math.sin(phaseVal) >= 0 ? 1 : -1);
       case 'triangle':
         return amplitude * (2 * Math.abs((phaseVal % (2 * Math.PI)) / (2 * Math.PI) - 0.5) - 1);
       case 'sawtooth':
@@ -243,7 +140,7 @@ export class Screen {
    */
   addGlowPoint(position) {
     // 创建一个小球体代表荧光点
-    const glowGeometry = new THREE.SphereGeometry(CONFIG.screenEffects.glowPointSize, 8, 8);
+    const glowGeometry = new THREE.SphereGeometry(CONFIG.screenEffects.glowPointSize, 6, 6);
     const glowMesh = new THREE.Mesh(glowGeometry, this.glowMaterial.clone());
     
     // 设置位置（稍微偏移，避免z-fighting）
@@ -299,14 +196,7 @@ export class Screen {
       }
     });
     
-    // 如果波形动画正在运行，更新波形
-    if (this.isWaveformAnimating) {
-      // 更新相位以实现动画效果
-      this.signalParams.phase += 0.02;
-      
-      // 更新波形显示
-      this.updateWaveform();
-    }
+    // 移除了静态波形动画逻辑
   }
   
   /**
@@ -335,187 +225,67 @@ export class Screen {
     });
   }
   
-  // ========== 波形控制方法 ==========
+  // ========== 移除了所有静态波形控制方法 ==========
+  // 保留电子束轨迹波形，这些方法不再需要
   
   /**
-   * 更新波形
-   */
-  updateWaveform() {
-    this.createWaveform();
-  }
-  
-  /**
-   * 设置波形类型
-   * @param {string} type - 波形类型 ('sine', 'square', 'triangle', 'sawtooth', 'pulse', 'noise')
-   */
-  setWaveformType(type) {
-    const validTypes = ['sine', 'square', 'triangle', 'sawtooth', 'pulse', 'noise'];
-    if (validTypes.includes(type)) {
-      this.signalParams.type = type;
-      this.updateWaveform();
-    }
-    return this;
-  }
-  
-  /**
-   * 调整时间分度值
-   * @param {number} step - 调整步长
-   */
-  adjustTimeDiv(step) {
-    this.viewport.timeDiv = Math.min(100, Math.max(0.1, this.viewport.timeDiv + step));
-    this.viewport.timeDiv = Number(this.viewport.timeDiv.toFixed(1));
-    this.updateWaveform();
-    return this;
-  }
-  
-  /**
-   * 调整电压分度值
-   * @param {number} step - 调整步长
-   */
-  adjustVoltsDiv(step) {
-    this.viewport.voltsDiv = Math.min(10, Math.max(0.1, this.viewport.voltsDiv + step));
-    this.viewport.voltsDiv = Number(this.viewport.voltsDiv.toFixed(2));
-    this.updateWaveform();
-    return this;
-  }
-  
-  /**
-   * 调整频率
-   * @param {number} step - 调整步长
-   */
-  adjustFrequency(step) {
-    this.signalParams.frequency = Math.max(0.1, this.signalParams.frequency + step);
-    this.updateWaveform();
-    return this;
-  }
-  
-  /**
-   * 设置频率
-   * @param {number} frequency - 频率值
-   */
-  setFrequency(frequency) {
-    this.signalParams.frequency = Math.max(0.1, frequency);
-    this.updateWaveform();
-    return this;
-  }
-  
-  /**
-   * 调整振幅
-   * @param {number} step - 调整步长
-   */
-  adjustAmplitude(step) {
-    this.signalParams.amplitude = Math.max(0.1, this.signalParams.amplitude + step);
-    this.updateWaveform();
-    return this;
-  }
-  
-  /**
-   * 设置振幅
-   * @param {number} amplitude - 振幅值
-   */
-  setAmplitude(amplitude) {
-    this.signalParams.amplitude = Math.max(0.1, amplitude);
-    this.updateWaveform();
-    return this;
-  }
-  
-  /**
-   * 调整显示位置
-   * @param {string} axis - 轴('horizontal' 或 'vertical')
-   * @param {number} step - 调整步长
-   */
-  adjustPosition(axis, step) {
-    if (axis === 'horizontal') {
-      this.viewport.horizontalPosition = Math.min(8, Math.max(-8, this.viewport.horizontalPosition + step));
-    } else if (axis === 'vertical') {
-      this.viewport.verticalPosition = Math.min(4, Math.max(-4, this.viewport.verticalPosition + step));
-    }
-    this.updateWaveform();
-    return this;
-  }
-  
-  /**
-   * 开始波形动画
-   */
-  startWaveformAnimation() {
-    if (this.isWaveformAnimating) return this;
-    
-    this.isWaveformAnimating = true;
-    
-    const animate = () => {
-      if (!this.isWaveformAnimating) return;
-      
-      // 更新相位
-      this.signalParams.phase += 0.02;
-      
-      // 更新波形
-      this.updateWaveform();
-      
-      // 请求下一帧
-      this.animationId = requestAnimationFrame(animate);
-    };
-    
-    animate();
-    return this;
-  }
-  
-  /**
-   * 停止波形动画
-   */
-  stopWaveformAnimation() {
-    this.isWaveformAnimating = false;
-    
-    if (this.animationId) {
-      cancelAnimationFrame(this.animationId);
-      this.animationId = null;
-    }
-    
-    return this;
-  }
-  
-  /**
-   * 设置相位
-   * @param {number} phase - 相位值（弧度）
-   */
-  setPhase(phase) {
-    this.signalParams.phase = phase;
-    this.updateWaveform();
-    return this;
-  }
-
-  /**
-   * 重置波形参数
-   */
-  resetWaveform() {
-    this.signalParams.phase = 0;
-    this.viewport.horizontalPosition = 0;
-    this.viewport.verticalPosition = 0;
-    this.updateWaveform();
-    return this;
-  }
-  
-  /**
-   * 显示/隐藏波形
+   * 显示/隐藏波形 - 保留此方法以避免调用错误，但不执行任何操作
    * @param {boolean} show - 是否显示波形
    */
   showWaveform(show) {
-    this.waveformConfig.showWaveform = show;
-    if (show) {
-      this.updateWaveform();
-    } else {
-      this.waveformGroup.clear();
-    }
+    // 静态波形已移除，此方法保留为空以避免调用错误
     return this;
   }
   
   /**
-   * 设置波形颜色
-   * @param {number} color - 颜色值 (十六进制)
+   * 设置波形类型 - 保留此方法以避免调用错误，但不执行任何操作
+   * @param {string} type - 波形类型
    */
-  setWaveformColor(color) {
-    this.waveformConfig.color = color;
-    this.waveformMaterial.color.setHex(color);
-    this.updateWaveform();
+  setWaveformType(type) {
+    // 静态波形已移除，此方法保留为空以避免调用错误
+    return this;
+  }
+  
+  /**
+   * 设置频率 - 保留此方法以避免调用错误，但不执行任何操作
+   * @param {number} frequency - 频率值
+   */
+  setFrequency(frequency) {
+    // 静态波形已移除，此方法保留为空以避免调用错误
+    return this;
+  }
+  
+  /**
+   * 设置振幅 - 保留此方法以避免调用错误，但不执行任何操作
+   * @param {number} amplitude - 振幅值
+   */
+  setAmplitude(amplitude) {
+    // 静态波形已移除，此方法保留为空以避免调用错误
+    return this;
+  }
+  
+  /**
+   * 设置相位 - 保留此方法以避免调用错误，但不执行任何操作
+   * @param {number} phase - 相位值（弧度）
+   */
+  setPhase(phase) {
+    // 静态波形已移除，此方法保留为空以避免调用错误
+    return this;
+  }
+  
+  /**
+   * 开始波形动画 - 保留此方法以避免调用错误，但不执行任何操作
+   */
+  startWaveformAnimation() {
+    // 静态波形已移除，此方法保留为空以避免调用错误
+    return this;
+  }
+  
+  /**
+   * 停止波形动画 - 保留此方法以避免调用错误，但不执行任何操作
+   */
+  stopWaveformAnimation() {
+    // 静态波形已移除，此方法保留为空以避免调用错误
     return this;
   }
 } 

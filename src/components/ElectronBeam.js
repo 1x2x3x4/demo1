@@ -18,6 +18,7 @@ export class ElectronBeam {
     this.beamPoints = [];
     this.tracePoints = [];
     this.traceLines = [];
+    this.traceSegments = []; // 存储轨迹段，避免回扫线
     
     // 电子束材质
     this.beamMaterial = new THREE.LineBasicMaterial({
@@ -92,18 +93,19 @@ export class ElectronBeam {
    * @param {number} deflectionParams.horizontal.voltage - 水平偏转电压
    */
   updateBeamPath(deflectionParams) {
-    // 计算偏转量
+    // 计算偏转量，添加防护
     const voltageScalingFactor = CONFIG.electronBeam.voltageScalingFactor;
-    const verticalDeflection = deflectionParams.vertical.voltage * (CONFIG.deflection.vertical.maxDeflection / voltageScalingFactor);
-    const horizontalDeflection = deflectionParams.horizontal.voltage * (CONFIG.deflection.horizontal.maxDeflection / voltageScalingFactor);
+    const verticalVoltage = deflectionParams?.vertical?.voltage ?? 0;
+    const horizontalVoltage = deflectionParams?.horizontal?.voltage ?? 0;
     
-    // 调试信息（只在电压有变化时输出）
-    if (Math.abs(deflectionParams.vertical.voltage) > 0.01 || Math.abs(deflectionParams.horizontal.voltage) > 0.01) {
-      console.log('电子束更新 - 垂直电压:', deflectionParams.vertical.voltage.toFixed(2), 
-                  '水平电压:', deflectionParams.horizontal.voltage.toFixed(2),
-                  '计算偏转量 - 垂直:', verticalDeflection.toFixed(3), 
-                  '水平:', horizontalDeflection.toFixed(3));
+    // 检查是否有 NaN 值
+    if (isNaN(verticalVoltage) || isNaN(horizontalVoltage)) {
+      console.error('电子束错误 - 检测到 NaN 值:', { verticalVoltage, horizontalVoltage });
+      return; // 直接返回，避免后续计算错误
     }
+    
+    const verticalDeflection = verticalVoltage * (CONFIG.deflection.vertical.maxDeflection / voltageScalingFactor);
+    const horizontalDeflection = horizontalVoltage * (CONFIG.deflection.horizontal.maxDeflection / voltageScalingFactor);
     
     // 生成简单的直线电子束轨迹
     this.beamPoints = this.generateSimpleBeamPath(verticalDeflection, horizontalDeflection);
@@ -148,7 +150,7 @@ export class ElectronBeam {
    */
   generateRealisticBeamPath(verticalDeflection, horizontalDeflection) {
     const trajectoryPoints = [];
-    const totalSegments = 50; // 增加段数以获得更平滑的曲线
+    const totalSegments = 100; // 增加段数以获得更平滑的曲线，特别是对方波
     
     // 从配置文件获取关键位置点
     const electronGun = new THREE.Vector3(
@@ -259,23 +261,67 @@ export class ElectronBeam {
    * @param {THREE.Vector3} point - 轨迹点
    */
   addTracePoint(point) {
-    // 添加新的轨迹点
-    this.tracePoints.push(point);
-    
-    // 如果轨迹点过多，移除最早的点
-    if (this.tracePoints.length > CONFIG.electronBeam.trace.maxPoints) {
-      this.tracePoints.shift();
+    // 如果没有当前段，创建一个新段
+    if (this.traceSegments.length === 0) {
+      this.traceSegments.push([]);
     }
     
+    // 获取当前段
+    const currentSegment = this.traceSegments[this.traceSegments.length - 1];
+    
+    // 添加点到当前段
+    currentSegment.push(point.clone());
+    
+    // 限制每个段的点数
+    if (currentSegment.length > CONFIG.electronBeam.trace.maxPoints / 2) {
+      // 保留最后几个点到新段，确保连续性
+      const newSegment = currentSegment.slice(-2);
+      this.traceSegments.push(newSegment);
+      
+      // 移除过多的段
+      if (this.traceSegments.length > 4) {
+        this.traceSegments.shift();
+      }
+    }
+    
+    // 重新绘制轨迹
+    this.redrawTraceSegments();
+  }
+
+  /**
+   * 重新绘制轨迹段
+   */
+  redrawTraceSegments() {
     // 清除旧的轨迹线
     this.clearTraceLines();
     
-    // 如果有足够的点，创建轨迹线
-    if (this.tracePoints.length > 1) {
-      const traceGeometry = new THREE.BufferGeometry().setFromPoints(this.tracePoints);
-      const traceLine = new THREE.Line(traceGeometry, this.traceMaterial);
-      this.traceLines.push(traceLine);
-      this.scene.add(traceLine);
+    // 为每个段创建单独的线条
+    this.traceSegments.forEach((segment, index) => {
+      if (segment.length > 1) {
+        const traceGeometry = new THREE.BufferGeometry().setFromPoints(segment);
+        
+        // 为不同段使用不同的透明度，最新的段最亮
+        const opacity = CONFIG.electronBeam.trace.opacity * (0.3 + 0.7 * (index + 1) / this.traceSegments.length);
+        const segmentMaterial = new THREE.LineBasicMaterial({
+          color: CONFIG.beam.color,
+          opacity: opacity,
+          transparent: true
+        });
+        
+        const traceLine = new THREE.Line(traceGeometry, segmentMaterial);
+        this.traceLines.push(traceLine);
+        this.scene.add(traceLine);
+      }
+    });
+  }
+
+  /**
+   * 开始新的轨迹段（用于避免回扫线）
+   */
+  startNewTraceSegment() {
+    // 如果当前段有点，创建新段
+    if (this.traceSegments.length > 0 && this.traceSegments[this.traceSegments.length - 1].length > 0) {
+      this.traceSegments.push([]);
     }
   }
   
@@ -303,6 +349,7 @@ export class ElectronBeam {
   clearAllTraces() {
     this.clearTraceLines();
     this.tracePoints = [];
+    this.traceSegments = [];
   }
 
   /**

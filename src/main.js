@@ -221,6 +221,13 @@ function initComponents() {
   // 初始化波形生成器
   waveformGenerator = new WaveformGenerator();
   
+  // 设置波形重置回调，在新周期开始时清除回扫线
+  waveformGenerator.setWaveformResetCallback(() => {
+    if (electronBeam) {
+      electronBeam.startNewTraceSegment();
+    }
+  });
+  
   // 初始化荧光屏控制器
   screenController = new Screen(scene, screen);
 }
@@ -370,27 +377,26 @@ function updateElectronBeam() {
 
 /**
  * 更新荧光屏波形显示
+ * 在波形参数改变时清除旧的显示内容
  */
 function updateScreenWaveform() {
-  if (screenController && CONFIG.waveform.enabled) {
-    // 将GUI参数同步到Screen.js
-    screenController.setWaveformType(CONFIG.waveform.type);
-    screenController.setFrequency(CONFIG.waveform.frequency);
-    screenController.setAmplitude(CONFIG.waveform.amplitude);
-    screenController.setPhase(CONFIG.waveform.phase);
-    
-    // 显示波形
-    screenController.showWaveform(true);
-    
-    // 如果启用了动画，开始波形动画
-    if (!screenController.isWaveformAnimating) {
-      screenController.startWaveformAnimation();
-    }
-  } else if (screenController) {
-    // 隐藏波形
-    screenController.showWaveform(false);
-    screenController.stopWaveformAnimation();
+  // 清除荧光屏上的所有荧光点
+  if (screenController) {
+    screenController.clearAllGlowPoints();
   }
+  
+  // 清除电子束的轨迹点
+  if (electronBeam) {
+    electronBeam.clearAllTraces();
+  }
+  
+  // 重置波形生成器的时间，避免波形不连续
+  // 这确保新的波形参数能从干净的状态开始显示
+  if (waveformGenerator) {
+    waveformGenerator.resetTime();
+  }
+  
+  console.log('波形参数变化：已清除旧的波形显示，准备显示新波形');
 }
 
 /**

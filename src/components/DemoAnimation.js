@@ -388,7 +388,7 @@ export class DemoAnimation {
   createElectronParticles(startPos, endPos, count = 10, duration = 2000, onComplete = null) {
     for (let i = 0; i < count; i++) {
       // 创建电子粒子
-      const geometry = new THREE.SphereGeometry(CONFIG.demoAnimation.electronParticle.size, 8, 8);
+      const geometry = new THREE.SphereGeometry(CONFIG.demoAnimation.electronParticle.size, 6, 6);
       const particle = new THREE.Mesh(geometry, this.particleMaterial.clone());
       
       // 设置初始位置
