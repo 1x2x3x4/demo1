@@ -15,9 +15,9 @@ module.exports = {
     external: './src/external.js',
   },
   output: {
-    filename: isDev ? 'js/[name].bundle.js' : 'js/[name].bundle.[contenthash].js',
+    filename: 'js/[name].bundle.js',
     path: path.resolve(__dirname, 'docs'),   // 构建输出目录
-    publicPath: isDev ? '/' : './',          // 开发模式使用绝对路径，生产模式使用相对路径
+    publicPath: './',                        // 始终使用相对路径，确保打包后的文件可以直接打开
     clean: !isDev,                          // 开发模式不清理，避免影响热重载
   },
   devtool: isDev ? 'eval-cheap-module-source-map' : 'source-map',
@@ -38,7 +38,7 @@ module.exports = {
   plugins: [
     // CSS 提取插件
     new MiniCssExtractPlugin({
-      filename: 'css/[name].[contenthash].css'  // CSS 文件放到 css 文件夹
+      filename: 'css/[name].css'  // CSS 文件放到 css 文件夹
     }),
     // internal.html 走 Webpack bundle
     new HtmlWebpackPlugin({
