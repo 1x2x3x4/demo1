@@ -34,6 +34,7 @@ export class DemoAnimation {
     this.continuousBeamInterval = null; // 连续电子束的定时器
     this.originalVoltages = null; // 保存原始偏转电压值，用于波形显示
     this.originalPlateOpacities = null; // 保存极板原始不透明度
+    this.originalGuiState = null; // 保存GUI面板的原始状态
     
     // 初始化粒子对象池
     this.particlePool = new ParticlePool(80, 25); // 最大80个粒子，预创建25个
@@ -168,7 +169,7 @@ export class DemoAnimation {
     this.animationSteps.push({
       title: '波形显示',
       description: '通过改变偏转电压，可以在荧光屏上绘制各种波形。',
-      duration: 8000,
+      duration: 10000,  // 增加持续时间以展示两种波形
       setup: () => {
         // 使用自定义视角，从左前方、上方观察整个阴极射线管和波形显示
         const resetPromise = this.setCustomView({
@@ -176,18 +177,46 @@ export class DemoAnimation {
           target: { x: 1.5, y: 0, z: 0 }         // 聚焦到整个装置的中心
         });
         
-        // 启用波形
+        // 启用波形和电子束
         setTimeout(() => {
-          // 设置波形参数
+          // 清除之前的粒子和荧光点
+          this.clearAllParticles();
+          if (this.components && this.components.screen) {
+            this.components.screen.clearAllGlowPoints();
+          }
+          
+          // 第一阶段：显示正弦波（前4秒）
           this.setWaveformParams({
             type: 'sine',
-            frequency: 1,
-            amplitude: 3,
+            frequency: 1.2,
+            amplitude: 2.5,
             enabled: true
           });
           
-          // 清除所有粒子
-          this.clearAllParticles();
+          // 启动连续电子束流 - 从电子枪到荧光屏的完整路径
+          this.startContinuousElectronBeam(
+            new THREE.Vector3(-3, 0, 0),     // 从电子枪开始
+            new THREE.Vector3(3, 0, 0)       // 到荧光屏结束
+          );
+          
+          // 4秒后切换到方波
+          const waveformSwitchCallback = setTimeout(() => {
+            // 清除荧光屏，准备显示新波形
+            if (this.components && this.components.screen) {
+              this.components.screen.clearAllGlowPoints();
+            }
+            
+            // 切换到方波
+            this.setWaveformParams({
+              type: 'square',
+              frequency: 0.8,
+              amplitude: 3,
+              enabled: true
+            });
+          }, 4000);
+          
+          this.stepCallbacks.push(waveformSwitchCallback);
+          
         }, 1000);
         
         return resetPromise;
@@ -227,6 +256,9 @@ export class DemoAnimation {
     
     // 保存极板原始不透明度并设置为70%
     this.setPlateOpacity(0.7);
+    
+    // 折叠GUI面板，避免演示时界面干扰
+    this.collapseGuiFolders();
     
     this.isPlaying = true;
     this.currentStep = 0;
@@ -274,6 +306,9 @@ export class DemoAnimation {
     
     // 恢复极板原始不透明度
     this.restorePlateOpacity();
+    
+    // 恢复GUI面板状态
+    this.restoreGuiFolders();
     
     // 重置所有参数
     this.resetAllParams();
@@ -760,6 +795,59 @@ export class DemoAnimation {
       },
       waveform: { ...CONFIG.waveform }
     };
+  }
+  
+  /**
+   * 保存GUI面板状态并折叠所有面板
+   */
+  collapseGuiFolders() {
+    // 获取GUI控制器
+    const guiController = this.controllers.guiController;
+    if (!guiController || !guiController.gui) {
+      return;
+    }
+    
+    // 保存原始状态
+    this.originalGuiState = {};
+    
+    // 遍历所有文件夹并保存其展开状态，然后折叠
+    guiController.gui.__folders && Object.keys(guiController.gui.__folders).forEach(folderName => {
+      const folder = guiController.gui.__folders[folderName];
+      if (folder) {
+        // 保存原始展开状态
+        this.originalGuiState[folderName] = folder.closed;
+        // 折叠面板
+        folder.close();
+      }
+    });
+    
+    console.log('GUI面板已折叠，保存的原始状态:', this.originalGuiState);
+  }
+  
+  /**
+   * 恢复GUI面板状态
+   */
+  restoreGuiFolders() {
+    // 获取GUI控制器
+    const guiController = this.controllers.guiController;
+    if (!guiController || !guiController.gui || !this.originalGuiState) {
+      return;
+    }
+    
+    // 恢复所有文件夹的原始展开状态
+    Object.keys(this.originalGuiState).forEach(folderName => {
+      const folder = guiController.gui.__folders[folderName];
+      if (folder) {
+        if (this.originalGuiState[folderName]) {
+          folder.close();
+        } else {
+          folder.open();
+        }
+      }
+    });
+    
+    console.log('GUI面板状态已恢复');
+    this.originalGuiState = null;
   }
   
   /**

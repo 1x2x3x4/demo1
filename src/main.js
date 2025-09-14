@@ -58,10 +58,10 @@ function init() {
   initLabelSystem(); // 初始化标签系统
   console.log('初始化分解视图...');
   initExplodedView(); // 初始化分解视图
+  console.log('初始化GUI...');
+  initGui(); // 初始化GUI（需要在演示动画之前初始化）
   console.log('初始化演示动画...');
   initDemoAnimation(); // 初始化演示动画
-  console.log('初始化GUI...');
-  initGui(); // 初始化GUI
   console.log('初始化UI控制器...');
   initUIController(); // 初始化UI控制器
   
@@ -287,6 +287,7 @@ function initDemoAnimation() {
       camera,
       controls,
       screenController,
+      guiController,  // 传递GUI控制器，用于演示时折叠面板
       onDeflectionChange: (deflectionParams) => {
         updateElectronBeam();
       },
