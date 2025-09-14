@@ -190,23 +190,6 @@ export class WaveformGenerator {
         vertical = (((t * freqMultiplier / (Math.PI * 2)) % 1) * 2 - 1) * amplitude * 0.5;
         break;
         
-      case 'pulse':
-        // 脉冲波 - 创建脉冲扫描效果
-        const pulseWidth = 0.1; // 脉冲宽度
-        const pulsePhase = ((t * freqMultiplier) / (Math.PI * 2)) % 1;
-        horizontal = (pulsePhase * 2 - 1) * amplitude;
-        vertical = (pulsePhase < pulseWidth ? 1 : -1) * amplitude * 0.5;
-        break;
-        
-      case 'noise':
-        // 噪声 - 随机扫描模式
-        // 使用时间和频率作为种子，创建伪随机但连续的噪声
-        const seed1 = Math.sin(t * freqMultiplier * 12.9898) * 43758.5453;
-        const seed2 = Math.sin(t * freqMultiplier * 78.233) * 37845.3475;
-        horizontal = ((seed1 - Math.floor(seed1)) * 2 - 1) * amplitude;
-        vertical = ((seed2 - Math.floor(seed2)) * 2 - 1) * amplitude * 0.5;
-        break;
-        
       default:
         // 默认为简单的水平扫描
         horizontal = (((t / (Math.PI * 2)) % 1) * 2 - 1) * amplitude;

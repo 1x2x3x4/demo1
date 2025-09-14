@@ -125,10 +125,6 @@ export class Screen {
         return amplitude * (2 * Math.abs((phaseVal % (2 * Math.PI)) / (2 * Math.PI) - 0.5) - 1);
       case 'sawtooth':
         return amplitude * (((phaseVal % (2 * Math.PI)) / (2 * Math.PI)) * 2 - 1);
-      case 'pulse':
-        return amplitude * (Math.sin(phaseVal) > 0.7 ? 1 : -1);
-      case 'noise':
-        return amplitude * (Math.random() * 2 - 1);
       default:
         return 0;
     }
