@@ -280,7 +280,8 @@ function initDemoAnimation() {
       v2,
       h1,
       h2,
-      screen
+      screen,
+      electronBeam
     },
     {
       camera,
@@ -295,6 +296,9 @@ function initDemoAnimation() {
       }
     }
   );
+  
+  // 设置全局引用供波形生成器使用
+  window.demoAnimation = demoAnimation;
 }
 
 // ===== GUI初始化 =====

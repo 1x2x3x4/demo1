@@ -154,7 +154,8 @@
     "demoAnimation": {
       "electronParticle": {
         "size": 0.015,
-        "opacity": 0.8
+        "opacity": 0.8,
+        "emissionRate": 8
       },
       "cameraOffset": { "x": 3, "y": 2, "z": 3 },
       "animationDuration": 1500

@@ -572,7 +572,9 @@ function createVueApp() {
           }
 
           if (this.isRunning) {
-            this.phase += 0.02;
+            // 在演示动画期间减慢50%
+            const phaseIncrement = (window.demoAnimation && window.demoAnimation.isPlaying) ? 0.01 : 0.02;
+            this.phase += phaseIncrement;
             this.animationId = requestAnimationFrame(this.drawLoop);
           }
         } catch (error) {

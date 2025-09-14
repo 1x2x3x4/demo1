@@ -38,8 +38,9 @@ export class WaveformGenerator {
     
     this.lastTimestamp = timestamp;
     
-    // 更新内部时间
-    this.time += deltaTime;
+    // 更新内部时间（在演示动画期间减慢50%）
+    const timeScale = (window.demoAnimation && window.demoAnimation.isPlaying) ? 0.5 : 1.0;
+    this.time += deltaTime * timeScale;
   }
 
   /**
@@ -107,9 +108,16 @@ export class WaveformGenerator {
    * @returns {Object} - 包含水平和垂直偏转电压的对象
    */
   calculateDeflectionVoltage(waveformParams, deflectionParams) {
-    // 获取基础电压值，添加防护
-    const baseHorizontal = deflectionParams?.horizontal?.voltage ?? 0;
-    const baseVertical = deflectionParams?.vertical?.voltage ?? 0;
+    // 在演示动画期间，使用固定的原始电压值以保持波形位置不变
+    let baseHorizontal, baseVertical;
+    if (window.demoAnimation && window.demoAnimation.isPlaying && window.demoAnimation.originalVoltages) {
+      baseHorizontal = window.demoAnimation.originalVoltages.horizontal;
+      baseVertical = window.demoAnimation.originalVoltages.vertical;
+    } else {
+      // 获取基础电压值，添加防护
+      baseHorizontal = deflectionParams?.horizontal?.voltage ?? 0;
+      baseVertical = deflectionParams?.vertical?.voltage ?? 0;
+    }
     
     // 如果波形未启用，直接返回基础电压
     if (!waveformParams.enabled) {
