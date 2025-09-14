@@ -280,7 +280,7 @@ function initDemoAnimation() {
       v2,
       h1,
       h2,
-      screen,
+      screen: screenController,  // 传递Screen类实例而不是THREE.js网格对象
       electronBeam
     },
     {

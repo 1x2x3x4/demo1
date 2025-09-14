@@ -39,7 +39,7 @@ export class WaveformGenerator {
     this.lastTimestamp = timestamp;
     
     // 更新内部时间（在演示动画期间减慢50%）
-    const timeScale = (window.demoAnimation && window.demoAnimation.isPlaying) ? 0.5 : 1.0;
+    const timeScale = (window.demoAnimation && window.demoAnimation.isPlaying) ? 0.6 : 1.0;
     this.time += deltaTime * timeScale;
   }
 

@@ -21,6 +21,9 @@ export class Screen {
     this.glowMeshes = [];
     this.maxGlowPoints = CONFIG.screenEffects.maxGlowPoints;
     
+    // 为了兼容DemoAnimation的focusOnComponent方法，添加position属性
+    this.position = this.screenMesh.position;
+    
     // 移除了静态波形相关属性，保留电子束轨迹波形
     
     // 初始化荧光材质

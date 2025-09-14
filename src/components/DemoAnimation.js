@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import * as TWEEN from '@tweenjs/tween.js';
 import { CONFIG } from '../configLoader';
 import { tweenGroup } from '../main.js';
+import { ParticlePool } from '../utils/ParticlePool.js';
 
 /**
  * 演示动画类
@@ -32,6 +33,10 @@ export class DemoAnimation {
     this.stepCallbacks = [];
     this.continuousBeamInterval = null; // 连续电子束的定时器
     this.originalVoltages = null; // 保存原始偏转电压值，用于波形显示
+    this.originalPlateOpacities = null; // 保存极板原始不透明度
+    
+    // 初始化粒子对象池
+    this.particlePool = new ParticlePool(80, 25); // 最大80个粒子，预创建25个
     
     console.log('初始化动画步骤');
     // 初始化动画步骤
@@ -46,6 +51,7 @@ export class DemoAnimation {
     });
     
     console.log('DemoAnimation构造函数完成');
+    console.log('粒子对象池状态:', this.particlePool.getStatus());
   }
   
   /**
@@ -58,8 +64,11 @@ export class DemoAnimation {
       description: '阴极射线管是一种真空电子管，利用电场控制电子束的偏转来显示图像。',
       duration: 3000,
       setup: () => {
-        // 重置视图
-        return this.resetView();
+        // 使用自定义视角展示整个阴极射线管的全貌
+        return this.setCustomView({
+          position: { x: 8, y: 5, z: 12 },  // 稍微远一点的俯视角度
+          target: { x: 0, y: 0, z: 0 }      // 观察整个设备中心
+        });
       }
     });
     
@@ -161,8 +170,11 @@ export class DemoAnimation {
       description: '通过改变偏转电压，可以在荧光屏上绘制各种波形。',
       duration: 8000,
       setup: () => {
-        // 重置视图
-        const resetPromise = this.resetView();
+        // 使用自定义视角，从左前方、上方观察整个阴极射线管和波形显示
+        const resetPromise = this.setCustomView({
+          position: { x: -6, y: 4, z: -4 },      // 从左前方、上方观察整个装置
+          target: { x: 1.5, y: 0, z: 0 }         // 聚焦到整个装置的中心
+        });
         
         // 启用波形
         setTimeout(() => {
@@ -213,6 +225,9 @@ export class DemoAnimation {
       vertical: CONFIG.deflection.vertical.voltage
     };
     
+    // 保存极板原始不透明度并设置为70%
+    this.setPlateOpacity(0.7);
+    
     this.isPlaying = true;
     this.currentStep = 0;
     
@@ -242,8 +257,13 @@ export class DemoAnimation {
     });
     this.tweens = [];
     
-    // 清除所有粒子
+    // 清除所有粒子（使用对象池优化）
     this.clearAllParticles();
+    
+    // 清理对象池中的所有活跃粒子
+    if (this.particlePool) {
+      this.particlePool.clearAll();
+    }
     
     // 恢复原始偏转电压值
     if (this.originalVoltages) {
@@ -251,6 +271,9 @@ export class DemoAnimation {
       CONFIG.deflection.vertical.voltage = this.originalVoltages.vertical;
       this.originalVoltages = null;
     }
+    
+    // 恢复极板原始不透明度
+    this.restorePlateOpacity();
     
     // 重置所有参数
     this.resetAllParams();
@@ -389,7 +412,42 @@ export class DemoAnimation {
       this.tweens.push(posTween, targetTween);
     });
   }
-  
+
+  /**
+   * 设置自定义视图
+   * @param {Object} viewConfig - 视图配置
+   * @param {Object} viewConfig.position - 摄像头位置 {x, y, z}
+   * @param {Object} viewConfig.target - 观察目标 {x, y, z}
+   * @param {number} duration - 动画持续时间（可选）
+   * @returns {Promise} 动画完成的Promise
+   */
+  setCustomView(viewConfig, duration = CONFIG.demoAnimation.animationDuration) {
+    return new Promise(resolve => {
+      // 设置相机位置
+      const posTween = new TWEEN.Tween(this.controllers.camera.position, tweenGroup)
+        .to({ 
+          x: viewConfig.position.x, 
+          y: viewConfig.position.y, 
+          z: viewConfig.position.z 
+        }, duration)
+        .easing(TWEEN.Easing.Cubic.InOut)
+        .onComplete(resolve)
+        .start();
+        
+      // 设置控制器目标点
+      const targetTween = new TWEEN.Tween(this.controllers.controls.target, tweenGroup)
+        .to({ 
+          x: viewConfig.target.x, 
+          y: viewConfig.target.y, 
+          z: viewConfig.target.z 
+        }, duration)
+        .easing(TWEEN.Easing.Cubic.InOut)
+        .start();
+        
+      this.tweens.push(posTween, targetTween);
+    });
+  }
+
   /**
    * 创建连续电子束流
    * @param {THREE.Vector3} startPos - 起始位置
@@ -411,9 +469,8 @@ export class DemoAnimation {
     for (let i = 0; i < count; i++) {
       // 使用 setTimeout 来实现真正的实时发射
       const timeout = setTimeout(() => {
-        // 在需要发射时才创建电子粒子
-        const geometry = new THREE.SphereGeometry(CONFIG.demoAnimation.electronParticle.size, 6, 6);
-        const particle = new THREE.Mesh(geometry, this.particleMaterial.clone());
+        // 从对象池获取粒子，而不是创建新的 (性能优化)
+        const particle = this.particlePool.getParticle();
         
         // 设置初始位置
         particle.position.copy(startPos);
@@ -466,8 +523,9 @@ export class DemoAnimation {
             if (index !== -1) {
               this.particles.splice(index, 1);
             }
-            geometry.dispose();
-            particle.material.dispose();
+            
+            // 归还粒子到对象池，而不是销毁 (性能优化)
+            this.particlePool.releaseParticle(particle);
           })
           .start();
         
@@ -740,6 +798,79 @@ export class DemoAnimation {
   }
   
   /**
+   * 设置极板不透明度
+   * @param {number} opacity - 不透明度值 (0-1)
+   */
+  setPlateOpacity(opacity) {
+    // 如果还没有保存原始不透明度，先保存
+    if (!this.originalPlateOpacities) {
+      this.originalPlateOpacities = {};
+      
+      // 保存垂直偏转板的原始不透明度
+      if (this.components.v1 && this.components.v1.material) {
+        this.originalPlateOpacities.v1 = this.components.v1.material.opacity || 1.0;
+      }
+      if (this.components.v2 && this.components.v2.material) {
+        this.originalPlateOpacities.v2 = this.components.v2.material.opacity || 1.0;
+      }
+      
+      // 保存水平偏转板的原始不透明度
+      if (this.components.h1 && this.components.h1.material) {
+        this.originalPlateOpacities.h1 = this.components.h1.material.opacity || 1.0;
+      }
+      if (this.components.h2 && this.components.h2.material) {
+        this.originalPlateOpacities.h2 = this.components.h2.material.opacity || 1.0;
+      }
+    }
+    
+    // 设置极板的新不透明度
+    const plates = [this.components.v1, this.components.v2, this.components.h1, this.components.h2];
+    plates.forEach(plate => {
+      if (plate && plate.material) {
+        plate.material.transparent = true;
+        plate.material.opacity = opacity;
+        plate.material.needsUpdate = true;
+      }
+    });
+  }
+  
+  /**
+   * 恢复极板原始不透明度
+   */
+  restorePlateOpacity() {
+    if (!this.originalPlateOpacities) {
+      return;
+    }
+    
+    // 恢复垂直偏转板的不透明度
+    if (this.components.v1 && this.components.v1.material) {
+      this.components.v1.material.opacity = this.originalPlateOpacities.v1;
+      this.components.v1.material.transparent = this.originalPlateOpacities.v1 < 1.0;
+      this.components.v1.material.needsUpdate = true;
+    }
+    if (this.components.v2 && this.components.v2.material) {
+      this.components.v2.material.opacity = this.originalPlateOpacities.v2;
+      this.components.v2.material.transparent = this.originalPlateOpacities.v2 < 1.0;
+      this.components.v2.material.needsUpdate = true;
+    }
+    
+    // 恢复水平偏转板的不透明度
+    if (this.components.h1 && this.components.h1.material) {
+      this.components.h1.material.opacity = this.originalPlateOpacities.h1;
+      this.components.h1.material.transparent = this.originalPlateOpacities.h1 < 1.0;
+      this.components.h1.material.needsUpdate = true;
+    }
+    if (this.components.h2 && this.components.h2.material) {
+      this.components.h2.material.opacity = this.originalPlateOpacities.h2;
+      this.components.h2.material.transparent = this.originalPlateOpacities.h2 < 1.0;
+      this.components.h2.material.needsUpdate = true;
+    }
+    
+    // 清除保存的原始值
+    this.originalPlateOpacities = null;
+  }
+
+  /**
    * 更新动画
    */
   update() {
@@ -755,5 +886,25 @@ export class DemoAnimation {
     
     // 更新TWEEN（使用新的 Group API）
     tweenGroup.update();
+  }
+  
+  /**
+   * 获取对象池性能统计信息
+   * @returns {Object} 对象池状态和性能统计
+   */
+  getParticlePoolStatus() {
+    if (!this.particlePool) {
+      return null;
+    }
+    return this.particlePool.getStatus();
+  }
+  
+  /**
+   * 打印对象池详细状态（调试用）
+   */
+  printParticlePoolStatus() {
+    if (this.particlePool) {
+      this.particlePool.printStatus();
+    }
   }
 } 

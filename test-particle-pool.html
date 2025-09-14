@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>粒子对象池性能测试</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background: #fafafa;
+        }
+        .test-button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 14px;
+        }
+        .test-button:hover {
+            background: #0056b3;
+        }
+        .test-button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .results {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 5px;
+            padding: 15px;
+            margin-top: 10px;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        .canvas-container {
+            text-align: center;
+            margin: 20px 0;
+        }
+        #testCanvas {
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔬 粒子对象池性能测试</h1>
+        
+        <div class="status info">
+            <strong>测试说明:</strong> 此页面用于测试粒子对象池的性能优化效果。
+            对象池通过重用对象来减少内存分配和垃圾回收，显著提升动画性能。
+        </div>
+
+        <div class="test-section">
+            <h3>🎯 基础性能对比测试</h3>
+            <p>比较传统方式和对象池方式创建/销毁粒子的性能差异</p>
+            <button class="test-button" onclick="runBasicTest()">运行基础测试</button>
+            <button class="test-button" onclick="runComprehensiveTest()">运行综合测试</button>
+            <button class="test-button" onclick="runMemoryTest()">内存使用测试</button>
+            <div id="basicResults" class="results" style="display: none;"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>📊 可视化演示</h3>
+            <p>实时观察对象池在动画中的效果</p>
+            <div class="canvas-container">
+                <canvas id="testCanvas" width="800" height="400"></canvas>
+            </div>
+            <button class="test-button" onclick="startVisualDemo()">开始可视化演示</button>
+            <button class="test-button" onclick="stopVisualDemo()">停止演示</button>
+            <button class="test-button" onclick="showPoolStatus()">显示对象池状态</button>
+            <div id="visualResults" class="results" style="display: none;"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>📈 实时性能监控</h3>
+            <p>监控动画过程中的性能指标</p>
+            <div id="performanceStats" class="results">
+                等待开始测试...
+            </div>
+        </div>
+    </div>
+
+    <!-- 引入Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    
+    <script type="module">
+        // 模拟ParticlePool类（简化版本用于测试）
+        class ParticlePool {
+            constructor(maxSize = 100, preCreateCount = 20) {
+                this.pool = [];
+                this.activeParticles = [];
+                this.maxSize = maxSize;
+                this.stats = { created: 0, reused: 0, released: 0, maxActive: 0 };
+                
+                // 预创建粒子
+                for (let i = 0; i < preCreateCount; i++) {
+                    const particle = this.createNewParticle();
+                    particle.visible = false;
+                    this.pool.push(particle);
+                    this.stats.created++;
+                }
+            }
+            
+            createNewParticle() {
+                const geometry = new THREE.SphereGeometry(0.02, 8, 6);
+                const material = new THREE.MeshBasicMaterial({ 
+                    color: Math.random() * 0xffffff,
+                    transparent: true,
+                    opacity: 0.8
+                });
+                return new THREE.Mesh(geometry, material);
+            }
+            
+            getParticle() {
+                let particle;
+                
+                if (this.pool.length > 0) {
+                    particle = this.pool.pop();
+                    this.stats.reused++;
+                } else if (this.activeParticles.length < this.maxSize) {
+                    particle = this.createNewParticle();
+                    this.stats.created++;
+                } else {
+                    particle = this.activeParticles.shift();
+                }
+                
+                particle.visible = true;
+                this.activeParticles.push(particle);
+                this.stats.maxActive = Math.max(this.stats.maxActive, this.activeParticles.length);
+                
+                return particle;
+            }
+            
+            releaseParticle(particle) {
+                const index = this.activeParticles.indexOf(particle);
+                if (index > -1) {
+                    this.activeParticles.splice(index, 1);
+                    particle.visible = false;
+                    particle.position.set(0, 0, 0);
+                    this.pool.push(particle);
+                    this.stats.released++;
+                }
+            }
+            
+            getStatus() {
+                return {
+                    poolSize: this.pool.length,
+                    activeCount: this.activeParticles.length,
+                    maxSize: this.maxSize,
+                    stats: { ...this.stats }
+                };
+            }
+            
+            clear() {
+                this.activeParticles.forEach(particle => particle.visible = false);
+                this.pool.push(...this.activeParticles);
+                this.activeParticles = [];
+            }
+        }
+
+        // 全局变量
+        let scene, camera, renderer, particlePool;
+        let animationId = null;
+        let performanceMonitor = null;
+
+        // 初始化Three.js场景
+        function initScene() {
+            const canvas = document.getElementById('testCanvas');
+            
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(75, canvas.width / canvas.height, 0.1, 1000);
+            renderer = new THREE.WebGLRenderer({ canvas: canvas });
+            renderer.setSize(canvas.width, canvas.height);
+            
+            camera.position.z = 5;
+            
+            // 添加光源
+            const light = new THREE.AmbientLight(0x404040, 0.4);
+            scene.add(light);
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight.position.set(1, 1, 1);
+            scene.add(directionalLight);
+            
+            // 初始化对象池
+            particlePool = new ParticlePool(200, 50);
+            
+            console.log('Three.js场景初始化完成');
+        }
+
+        // 基础性能测试
+        window.runBasicTest = function() {
+            const results = document.getElementById('basicResults');
+            results.style.display = 'block';
+            results.textContent = '正在运行基础性能测试...\n';
+            
+            setTimeout(() => {
+                const testSizes = [50, 100, 200];
+                let output = '=== 基础性能对比测试结果 ===\n\n';
+                
+                testSizes.forEach(size => {
+                    // 传统方式测试
+                    const traditionalStart = performance.now();
+                    const traditionalParticles = [];
+                    
+                    for (let i = 0; i < size; i++) {
+                        const geometry = new THREE.SphereGeometry(0.02, 8, 6);
+                        const material = new THREE.MeshBasicMaterial({ color: 0x00ffff });
+                        const particle = new THREE.Mesh(geometry, material);
+                        traditionalParticles.push(particle);
+                    }
+                    
+                    traditionalParticles.forEach(particle => {
+                        particle.geometry.dispose();
+                        particle.material.dispose();
+                    });
+                    
+                    const traditionalTime = performance.now() - traditionalStart;
+                    
+                    // 对象池方式测试
+                    const poolStart = performance.now();
+                    const poolParticles = [];
+                    
+                    for (let i = 0; i < size; i++) {
+                        const particle = particlePool.getParticle();
+                        poolParticles.push(particle);
+                    }
+                    
+                    poolParticles.forEach(particle => {
+                        particlePool.releaseParticle(particle);
+                    });
+                    
+                    const poolTime = performance.now() - poolStart;
+                    
+                    const speedup = (traditionalTime / poolTime).toFixed(2);
+                    
+                    output += `粒子数: ${size}\n`;
+                    output += `传统方式: ${traditionalTime.toFixed(2)}ms\n`;
+                    output += `对象池: ${poolTime.toFixed(2)}ms\n`;
+                    output += `性能提升: ${speedup}x 倍\n`;
+                    output += `节省时间: ${(traditionalTime - poolTime).toFixed(2)}ms\n\n`;
+                });
+                
+                const status = particlePool.getStatus();
+                output += `=== 对象池状态 ===\n`;
+                output += `池中可用: ${status.poolSize}\n`;
+                output += `正在使用: ${status.activeCount}\n`;
+                output += `总创建数: ${status.stats.created}\n`;
+                output += `重用次数: ${status.stats.reused}\n`;
+                output += `重用率: ${(status.stats.reused / (status.stats.created + status.stats.reused) * 100).toFixed(1)}%\n`;
+                
+                results.textContent = output;
+            }, 100);
+        };
+
+        // 综合测试
+        window.runComprehensiveTest = function() {
+            const results = document.getElementById('basicResults');
+            results.style.display = 'block';
+            results.textContent = '正在运行综合性能测试...\n';
+            
+            setTimeout(() => {
+                const testSizes = [100, 300, 500, 1000];
+                let output = '=== 综合性能测试结果 ===\n\n';
+                let totalSpeedup = 0;
+                
+                testSizes.forEach((size, index) => {
+                    // 多次测试取平均值
+                    let traditionalTotal = 0;
+                    let poolTotal = 0;
+                    const iterations = 3;
+                    
+                    for (let iter = 0; iter < iterations; iter++) {
+                        // 传统方式
+                        const traditionalStart = performance.now();
+                        const traditionalParticles = [];
+                        
+                        for (let i = 0; i < size; i++) {
+                            const geometry = new THREE.SphereGeometry(0.02, 8, 6);
+                            const material = new THREE.MeshBasicMaterial({ color: 0x00ffff });
+                            const particle = new THREE.Mesh(geometry, material);
+                            traditionalParticles.push(particle);
+                        }
+                        
+                        traditionalParticles.forEach(particle => {
+                            particle.geometry.dispose();
+                            particle.material.dispose();
+                        });
+                        
+                        traditionalTotal += performance.now() - traditionalStart;
+                        
+                        // 对象池方式
+                        const poolStart = performance.now();
+                        const poolParticles = [];
+                        
+                        for (let i = 0; i < size; i++) {
+                            const particle = particlePool.getParticle();
+                            poolParticles.push(particle);
+                        }
+                        
+                        poolParticles.forEach(particle => {
+                            particlePool.releaseParticle(particle);
+                        });
+                        
+                        poolTotal += performance.now() - poolStart;
+                    }
+                    
+                    const avgTraditional = traditionalTotal / iterations;
+                    const avgPool = poolTotal / iterations;
+                    const speedup = avgTraditional / avgPool;
+                    totalSpeedup += speedup;
+                    
+                    output += `测试 ${index + 1}: ${size} 个粒子 (${iterations} 次平均)\n`;
+                    output += `传统方式: ${avgTraditional.toFixed(2)}ms\n`;
+                    output += `对象池: ${avgPool.toFixed(2)}ms\n`;
+                    output += `性能提升: ${speedup.toFixed(2)}x\n`;
+                    output += `效率提升: ${((speedup - 1) * 100).toFixed(1)}%\n\n`;
+                });
+                
+                const avgSpeedup = totalSpeedup / testSizes.length;
+                output += `=== 总结 ===\n`;
+                output += `平均性能提升: ${avgSpeedup.toFixed(2)}x\n`;
+                output += `平均效率提升: ${((avgSpeedup - 1) * 100).toFixed(1)}%\n`;
+                
+                results.textContent = output;
+            }, 100);
+        };
+
+        // 内存测试
+        window.runMemoryTest = function() {
+            const results = document.getElementById('basicResults');
+            results.style.display = 'block';
+            
+            if (!performance.memory) {
+                results.textContent = '❌ 浏览器不支持内存监控\n请在 Chrome 中使用 --enable-precise-memory-info 标志运行';
+                return;
+            }
+            
+            results.textContent = '正在运行内存使用测试...\n';
+            
+            setTimeout(() => {
+                const initialMemory = performance.memory.usedJSHeapSize;
+                let output = '=== 内存使用测试结果 ===\n\n';
+                output += `初始内存: ${(initialMemory / 1024 / 1024).toFixed(2)}MB\n\n`;
+                
+                // 传统方式大量创建
+                const particles = [];
+                for (let i = 0; i < 1000; i++) {
+                    const geometry = new THREE.SphereGeometry(0.02, 8, 6);
+                    const material = new THREE.MeshBasicMaterial({ color: 0x00ffff });
+                    const particle = new THREE.Mesh(geometry, material);
+                    particles.push(particle);
+                }
+                
+                const afterCreate = performance.memory.usedJSHeapSize;
+                output += `创建1000个粒子后: ${(afterCreate / 1024 / 1024).toFixed(2)}MB\n`;
+                output += `内存增长: ${((afterCreate - initialMemory) / 1024 / 1024).toFixed(2)}MB\n\n`;
+                
+                // 清理
+                particles.forEach(particle => {
+                    particle.geometry.dispose();
+                    particle.material.dispose();
+                });
+                
+                // 强制垃圾回收（如果可用）
+                if (window.gc) {
+                    window.gc();
+                }
+                
+                const afterCleanup = performance.memory.usedJSHeapSize;
+                output += `清理后: ${(afterCleanup / 1024 / 1024).toFixed(2)}MB\n`;
+                output += `内存释放: ${((afterCreate - afterCleanup) / 1024 / 1024).toFixed(2)}MB\n\n`;
+                
+                // 对象池方式
+                const poolParticles = [];
+                for (let i = 0; i < 1000; i++) {
+                    const particle = particlePool.getParticle();
+                    poolParticles.push(particle);
+                }
+                
+                const afterPool = performance.memory.usedJSHeapSize;
+                output += `对象池获取1000个粒子后: ${(afterPool / 1024 / 1024).toFixed(2)}MB\n`;
+                output += `对象池内存增长: ${((afterPool - afterCleanup) / 1024 / 1024).toFixed(2)}MB\n\n`;
+                
+                poolParticles.forEach(particle => {
+                    particlePool.releaseParticle(particle);
+                });
+                
+                const finalMemory = performance.memory.usedJSHeapSize;
+                output += `释放回对象池后: ${(finalMemory / 1024 / 1024).toFixed(2)}MB\n\n`;
+                
+                output += `=== 内存效率对比 ===\n`;
+                output += `传统方式内存开销: ${((afterCreate - initialMemory) / 1024 / 1024).toFixed(2)}MB\n`;
+                output += `对象池内存开销: ${((afterPool - afterCleanup) / 1024 / 1024).toFixed(2)}MB\n`;
+                output += `内存节省: ${(((afterCreate - initialMemory) - (afterPool - afterCleanup)) / 1024 / 1024).toFixed(2)}MB\n`;
+                
+                results.textContent = output;
+            }, 100);
+        };
+
+        // 可视化演示
+        window.startVisualDemo = function() {
+            if (!scene) initScene();
+            
+            const results = document.getElementById('visualResults');
+            results.style.display = 'block';
+            results.textContent = '可视化演示正在运行...\n按 F12 打开开发者工具查看详细日志\n\n';
+            
+            let frameCount = 0;
+            let lastTime = performance.now();
+            
+            function animate() {
+                animationId = requestAnimationFrame(animate);
+                
+                // 每隔几帧创建和销毁一些粒子
+                if (frameCount % 10 === 0) {
+                    // 创建一些粒子
+                    for (let i = 0; i < 5; i++) {
+                        const particle = particlePool.getParticle();
+                        particle.position.set(
+                            (Math.random() - 0.5) * 8,
+                            (Math.random() - 0.5) * 4,
+                            (Math.random() - 0.5) * 4
+                        );
+                        scene.add(particle);
+                        
+                        // 一段时间后移除
+                        setTimeout(() => {
+                            scene.remove(particle);
+                            particlePool.releaseParticle(particle);
+                        }, Math.random() * 3000 + 1000);
+                    }
+                }
+                
+                // 更新性能统计
+                if (frameCount % 60 === 0) {
+                    const currentTime = performance.now();
+                    const fps = 1000 / ((currentTime - lastTime) / 60);
+                    lastTime = currentTime;
+                    
+                    const status = particlePool.getStatus();
+                    const statsDiv = document.getElementById('performanceStats');
+                    statsDiv.textContent = `=== 实时性能监控 ===
+帧率: ${fps.toFixed(1)} FPS
+对象池状态:
+- 池中可用: ${status.poolSize}
+- 正在使用: ${status.activeCount}
+- 最大容量: ${status.maxSize}
+- 总创建数: ${status.stats.created}
+- 重用次数: ${status.stats.reused}
+- 释放次数: ${status.stats.released}
+- 重用率: ${status.stats.reused > 0 ? (status.stats.reused / (status.stats.created + status.stats.reused) * 100).toFixed(1) : 0}%
+
+场景统计:
+- 场景中对象数: ${scene.children.length}
+- 活跃粒子数: ${status.activeCount}`;
+                }
+                
+                frameCount++;
+                renderer.render(scene, camera);
+            }
+            
+            animate();
+        };
+
+        window.stopVisualDemo = function() {
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+                animationId = null;
+            }
+            
+            if (particlePool) {
+                particlePool.clear();
+            }
+            
+            document.getElementById('visualResults').textContent = '可视化演示已停止';
+            document.getElementById('performanceStats').textContent = '演示已停止';
+        };
+
+        window.showPoolStatus = function() {
+            if (!particlePool) {
+                alert('请先运行可视化演示');
+                return;
+            }
+            
+            const status = particlePool.getStatus();
+            const results = document.getElementById('visualResults');
+            results.style.display = 'block';
+            results.textContent = `=== 对象池详细状态 ===
+池中可用粒子数: ${status.poolSize}
+正在使用粒子数: ${status.activeCount}
+最大容量: ${status.maxSize}
+总创建数: ${status.stats.created}
+重用次数: ${status.stats.reused}
+释放次数: ${status.stats.released}
+历史最大活跃数: ${status.stats.maxActive}
+重用率: ${status.stats.reused > 0 ? (status.stats.reused / (status.stats.created + status.stats.reused) * 100).toFixed(1) : 0}%
+
+性能分析:
+- 对象创建开销: ${status.stats.created} 次
+- 对象重用收益: ${status.stats.reused} 次
+- 总体效率: ${status.stats.reused > status.stats.created ? '优秀' : status.stats.reused > status.stats.created * 0.5 ? '良好' : '可改进'}`;
+        };
+
+        // 页面加载完成后初始化
+        window.addEventListener('load', function() {
+            initScene();
+            console.log('粒子对象池测试页面加载完成');
+            console.log('💡 提示：可以在控制台中查看详细的性能日志');
+        });
+    </script>
+</body>
+</html>
