@@ -44,11 +44,14 @@ export class DemoAnimation {
     this.initAnimationSteps();
     
     console.log('创建电子粒子材质');
-    // 创建电子粒子材质
+    // 创建电子粒子材质 - 优化透明度渲染
     this.particleMaterial = new THREE.MeshBasicMaterial({
       color: CONFIG.beam.color,
       transparent: true,
-      opacity: CONFIG.demoAnimation.electronParticle.opacity
+      opacity: CONFIG.demoAnimation.electronParticle.opacity,
+      depthTest: false,  // 禁用深度测试，确保粒子总是可见
+      depthWrite: false, // 禁用深度写入，避免影响其他透明物体
+      blending: THREE.AdditiveBlending // 使用加法混合，增强发光效果
     });
     
     console.log('DemoAnimation构造函数完成');
@@ -254,8 +257,8 @@ export class DemoAnimation {
       vertical: CONFIG.deflection.vertical.voltage
     };
     
-    // 保存极板原始不透明度并设置为70%
-    this.setPlateOpacity(0.7);
+    // 保存极板原始不透明度并设置为50%，提高透明度以便更好地观察电子束
+    this.setPlateOpacity(0.5);
     
     // 折叠GUI面板，避免演示时界面干扰
     this.collapseGuiFolders();
@@ -610,9 +613,19 @@ export class DemoAnimation {
     this.continuousBeamInterval = setInterval(() => {
       if (!this.isPlaying) return; // 如果动画已停止，不再发射新粒子
       
-      // 创建单个电子粒子
+      // 创建单个电子粒子 - 使用优化的材质
       const geometry = new THREE.SphereGeometry(CONFIG.demoAnimation.electronParticle.size, 6, 6);
-      const particle = new THREE.Mesh(geometry, this.particleMaterial.clone());
+      const particleMat = this.particleMaterial.clone();
+      
+      // 确保粒子材质具有最佳可见性
+      particleMat.depthTest = false;
+      particleMat.depthWrite = false;
+      particleMat.blending = THREE.AdditiveBlending;
+      
+      const particle = new THREE.Mesh(geometry, particleMat);
+      
+      // 设置粒子的渲染顺序，确保在极板之后渲染
+      particle.renderOrder = 10;
       
       // 设置初始位置
       particle.position.copy(startPos);
@@ -911,13 +924,18 @@ export class DemoAnimation {
       }
     }
     
-    // 设置极板的新不透明度
+    // 设置极板的新不透明度 - 优化透明度渲染
     const plates = [this.components.v1, this.components.v2, this.components.h1, this.components.h2];
     plates.forEach(plate => {
       if (plate && plate.material) {
         plate.material.transparent = true;
         plate.material.opacity = opacity;
+        plate.material.depthWrite = false; // 禁用深度写入，避免遮挡电子束
+        plate.material.side = THREE.DoubleSide; // 双面渲染，确保各个角度都能看到
         plate.material.needsUpdate = true;
+        
+        // 调整渲染顺序，让极板在电子束之前渲染
+        plate.renderOrder = -1;
       }
     });
   }
@@ -930,29 +948,26 @@ export class DemoAnimation {
       return;
     }
     
-    // 恢复垂直偏转板的不透明度
-    if (this.components.v1 && this.components.v1.material) {
-      this.components.v1.material.opacity = this.originalPlateOpacities.v1;
-      this.components.v1.material.transparent = this.originalPlateOpacities.v1 < 1.0;
-      this.components.v1.material.needsUpdate = true;
-    }
-    if (this.components.v2 && this.components.v2.material) {
-      this.components.v2.material.opacity = this.originalPlateOpacities.v2;
-      this.components.v2.material.transparent = this.originalPlateOpacities.v2 < 1.0;
-      this.components.v2.material.needsUpdate = true;
-    }
+    // 恢复所有极板的原始不透明度和渲染属性
+    const plates = [
+      { component: this.components.v1, key: 'v1' },
+      { component: this.components.v2, key: 'v2' },
+      { component: this.components.h1, key: 'h1' },
+      { component: this.components.h2, key: 'h2' }
+    ];
     
-    // 恢复水平偏转板的不透明度
-    if (this.components.h1 && this.components.h1.material) {
-      this.components.h1.material.opacity = this.originalPlateOpacities.h1;
-      this.components.h1.material.transparent = this.originalPlateOpacities.h1 < 1.0;
-      this.components.h1.material.needsUpdate = true;
-    }
-    if (this.components.h2 && this.components.h2.material) {
-      this.components.h2.material.opacity = this.originalPlateOpacities.h2;
-      this.components.h2.material.transparent = this.originalPlateOpacities.h2 < 1.0;
-      this.components.h2.material.needsUpdate = true;
-    }
+    plates.forEach(({ component, key }) => {
+      if (component && component.material) {
+        component.material.opacity = this.originalPlateOpacities[key];
+        component.material.transparent = this.originalPlateOpacities[key] < 1.0;
+        component.material.depthWrite = true; // 恢复深度写入
+        component.material.side = THREE.FrontSide; // 恢复单面渲染
+        component.material.needsUpdate = true;
+        
+        // 恢复渲染顺序
+        component.renderOrder = 0;
+      }
+    });
     
     // 清除保存的原始值
     this.originalPlateOpacities = null;

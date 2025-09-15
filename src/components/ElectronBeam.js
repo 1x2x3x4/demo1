@@ -53,6 +53,10 @@ export class ElectronBeam {
     // 创建电子束几何体和线条
     const beamGeometry = new THREE.BufferGeometry().setFromPoints(this.beamPoints);
     this.beamLine = new THREE.Line(beamGeometry, this.beamMaterial);
+    
+    // 设置渲染顺序，确保电子束在透明极板之后渲染
+    this.beamLine.renderOrder = 5;
+    
     this.scene.add(this.beamLine);
   }
 
@@ -60,12 +64,14 @@ export class ElectronBeam {
    * 创建增强的电子束材质，包含发光效果
    */
   createEnhancedBeamMaterial() {
-    // 主电子束材质（更亮更鲜艳）
+    // 主电子束材质（更亮更鲜艳）- 优化透明度渲染
     this.beamMaterial = new THREE.LineBasicMaterial({
       color: CONFIG.beam.color,
       opacity: CONFIG.beam.intensity,
       transparent: true,
-      linewidth: 3 // 增加线宽
+      linewidth: 3, // 增加线宽
+      depthTest: false, // 禁用深度测试，确保电子束总是可见
+      depthWrite: false // 禁用深度写入
     });
     
     // 创建发光外围材质
@@ -73,14 +79,18 @@ export class ElectronBeam {
       color: CONFIG.beam.color,
       opacity: CONFIG.beam.intensity * 0.3,
       transparent: true,
-      linewidth: 8 // 更宽的发光效果
+      linewidth: 8, // 更宽的发光效果
+      depthTest: false, // 禁用深度测试
+      depthWrite: false // 禁用深度写入
     });
     
-    // 轨迹材质保持不变
+    // 轨迹材质 - 优化透明度渲染
     this.traceMaterial = new THREE.LineBasicMaterial({
       color: CONFIG.beam.color,
       opacity: CONFIG.electronBeam.trace.opacity,
-      transparent: true
+      transparent: true,
+      depthTest: false, // 禁用深度测试，确保轨迹可见
+      depthWrite: false // 禁用深度写入
     });
   }
   
@@ -305,10 +315,13 @@ export class ElectronBeam {
         const segmentMaterial = new THREE.LineBasicMaterial({
           color: CONFIG.beam.color,
           opacity: opacity,
-          transparent: true
+          transparent: true,
+          depthTest: false, // 禁用深度测试，确保轨迹可见
+          depthWrite: false // 禁用深度写入
         });
         
         const traceLine = new THREE.Line(traceGeometry, segmentMaterial);
+        traceLine.renderOrder = 3; // 设置轨迹线的渲染顺序，在极板之后渲染
         this.traceLines.push(traceLine);
         this.scene.add(traceLine);
       }
@@ -381,10 +394,12 @@ export class ElectronBeam {
   createLayeredBeam(geometry) {
     // 创建发光外围层（更宽，透明度更低）
     this.glowLine = new THREE.Line(geometry.clone(), this.glowMaterial);
+    this.glowLine.renderOrder = 4; // 设置渲染顺序，在极板之后，主电子束之前
     this.scene.add(this.glowLine);
     
     // 创建主电子束（较窄，亮度更高）
     this.beamLine = new THREE.Line(geometry.clone(), this.beamMaterial);
+    this.beamLine.renderOrder = 5; // 设置渲染顺序，确保在透明极板之后渲染
     this.scene.add(this.beamLine);
   }
 

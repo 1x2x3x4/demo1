@@ -61,17 +61,21 @@ export class ParticlePool {
       6    // 垂直分段数（较低以提升性能）
     );
     
-    // 创建材质
+    // 创建材质 - 优化透明度渲染
     const material = new THREE.MeshBasicMaterial({
       color: CONFIG.beam?.color || 0x00ffff,
       transparent: true,
       opacity: CONFIG.demoAnimation?.electronParticle?.opacity || 0.8,
-      // 禁用深度写入以避免透明度问题
-      depthWrite: false
+      depthTest: false,  // 禁用深度测试，确保粒子总是可见
+      depthWrite: false, // 禁用深度写入以避免透明度问题
+      blending: THREE.AdditiveBlending // 使用加法混合，增强发光效果
     });
     
     // 创建网格对象
     const particle = new THREE.Mesh(geometry, material);
+    
+    // 设置渲染顺序，确保粒子在透明极板之后渲染
+    particle.renderOrder = 10;
     
     // 添加自定义属性用于追踪
     particle.userData = {
