@@ -126,7 +126,7 @@ export class GuiController {
         CONFIG.shell.color = value;
         this.onShellChange(CONFIG.shell);
       });
-      
+  
     shellFolder.open();
   }
 } 

@@ -8,7 +8,9 @@ import { renderSwitcher } from '../src/widgets/switcher.js';
 
 
 // ===== 导入自定义模块 =====
-import { CONFIG } from './configLoader';  // 配置文件
+import { CONFIG } from './configLoader';
+import { ConnectionPositionDemo } from './examples/ConnectionPositionDemo.js';
+import { SuperellipseTransitionDemo } from './examples/SuperellipseTransitionDemo.js';  // 配置文件
 import { GuiController } from './controllers/GuiController';  // GUI控制器
 import { UIController } from './controllers/UIController';  // UI控制器
 import { WaveformGenerator } from './components/WaveformGenerator';  // 波形生成器
@@ -36,15 +38,59 @@ if (module.hot) {
     // 重新初始化组件以应用新配置
     if (electronBeam) electronBeam.updateMaterial();
     if (screenController) screenController.updateMaterial();
+    if (crtShell) crtShell.updateConfig();  // 添加CRTShell响应式更新
   });
   
-  module.hot.accept(['./components/ElectronBeam', './components/Screen', './components/WaveformGenerator'], () => {
+  module.hot.accept(['./components/ElectronBeam', './components/Screen', './components/WaveformGenerator', './components/CRTShell'], () => {
     console.log('组件已更新，重新加载...');
   });
 }
 
 // ===== 场景对象引用 =====
 let gun, gunHead, v1, v2, h1, h2, screen;  // 电子枪、电子枪头、垂直偏转板、水平偏转板、荧光屏    
+
+// ===== 工具函数 =====
+/**
+ * 解析颜色值，支持多种格式
+ * @param {string|number} color - 颜色值（可以是 "#ffffff", "0xffffff", RGB等格式）
+ * @returns {number|null} - 解析后的十六进制数值，失败返回null
+ */
+function parseColor(color) {
+  try {
+    if (typeof color === 'number') {
+      return color;
+    }
+    
+    if (typeof color === 'string') {
+      // 处理十六进制格式 "0xffffff"
+      if (color.startsWith('0x')) {
+        return parseInt(color, 16);
+      }
+      
+      // 处理CSS十六进制格式 "#ffffff"
+      if (color.startsWith('#')) {
+        return parseInt(color.replace('#', '0x'), 16);
+      }
+      
+      // 处理纯十六进制字符串 "ffffff"
+      if (/^[0-9a-fA-F]{6}$/.test(color)) {
+        return parseInt('0x' + color, 16);
+      }
+      
+      // 尝试直接解析
+      const parsed = parseInt(color, 16);
+      if (!isNaN(parsed)) {
+        return parsed;
+      }
+    }
+    
+    console.warn('无法解析颜色值:', color);
+    return null;
+  } catch (error) {
+    console.error('颜色解析错误:', error, '输入值:', color);
+    return null;
+  }
+}
 
 // ===== 初始化函数 =====
 function init() {
@@ -256,6 +302,12 @@ function initComponents() {
   // 初始化CRT外壳
   crtShell = new CRTShell();
   scene.add(crtShell.getShell());
+  
+  // 初始化连接位置演示（使其在全局可用）
+  window.connectionDemo = new ConnectionPositionDemo(crtShell);
+  
+  // 初始化超椭圆形状渐变演示（使其在全局可用）
+  window.transitionDemo = new SuperellipseTransitionDemo(crtShell);
 }
 
 // ===== 标签系统初始化 =====
@@ -350,7 +402,77 @@ function initGui() {
       if (crtShell) {
         crtShell.setVisible(shellParams.visible);
         crtShell.setOpacity(shellParams.opacity);
-        crtShell.setColor(parseInt(shellParams.color.replace('#', '0x')));
+        
+        // 处理主外壳颜色
+        if (shellParams.color) {
+          const shellColor = parseColor(shellParams.color);
+          if (shellColor !== null) {
+            crtShell.setColor(shellColor);
+          }
+        }
+        
+        // 处理第一个圆柱体
+        if (shellParams.cylinder1) {
+          if (shellParams.cylinder1.hasOwnProperty('visible')) {
+            crtShell.setCylinder1Visible(shellParams.cylinder1.visible);
+          }
+          if (shellParams.cylinder1.hasOwnProperty('opacity')) {
+            crtShell.setCylinder1Opacity(shellParams.cylinder1.opacity);
+          }
+          if (shellParams.cylinder1.color) {
+            const cylinder1Color = parseColor(shellParams.cylinder1.color);
+            if (cylinder1Color !== null) {
+              crtShell.setCylinder1Color(cylinder1Color);
+            }
+          }
+          if (shellParams.cylinder1.position) {
+            crtShell.setCylinder1Position(
+              shellParams.cylinder1.position.x,
+              shellParams.cylinder1.position.y,
+              shellParams.cylinder1.position.z
+            );
+          }
+          if (shellParams.cylinder1.rotation) {
+            crtShell.setCylinder1Rotation(
+              shellParams.cylinder1.rotation.x,
+              shellParams.cylinder1.rotation.y,
+              shellParams.cylinder1.rotation.z
+            );
+          }
+        }
+        
+        // 处理第二个圆柱体
+        if (shellParams.cylinder2) {
+          if (shellParams.cylinder2.hasOwnProperty('visible')) {
+            crtShell.setCylinder2Visible(shellParams.cylinder2.visible);
+          }
+          if (shellParams.cylinder2.hasOwnProperty('opacity')) {
+            crtShell.setCylinder2Opacity(shellParams.cylinder2.opacity);
+          }
+          if (shellParams.cylinder2.color) {
+            const cylinder2Color = parseColor(shellParams.cylinder2.color);
+            if (cylinder2Color !== null) {
+              crtShell.setCylinder2Color(cylinder2Color);
+            }
+          }
+          if (shellParams.cylinder2.position) {
+            crtShell.setCylinder2Position(
+              shellParams.cylinder2.position.x,
+              shellParams.cylinder2.position.y,
+              shellParams.cylinder2.position.z
+            );
+          }
+          if (shellParams.cylinder2.rotation) {
+            crtShell.setCylinder2Rotation(
+              shellParams.cylinder2.rotation.x,
+              shellParams.cylinder2.rotation.y,
+              shellParams.cylinder2.rotation.z
+            );
+          }
+        }
+        
+        // 触发配置更新以保持同步
+        crtShell.updateConfig();
       }
     }
   });
