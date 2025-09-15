@@ -364,10 +364,25 @@ export class UIController {
    */
   toggleExplodedView() {
     console.log('切换分解视图', this.controllers.explodedView);
+    console.log('当前components:', this.components);
+    console.log('crtShell存在?', !!this.components.crtShell);
+    
     if (!this.controllers.explodedView) return;
     
     const exploded = this.controllers.explodedView.toggle();
     console.log('分解视图状态:', exploded);
+    
+    // 同时切换cylinder2的爆炸效果
+    if (this.components.crtShell && this.components.crtShell.toggleCylinder2Explode) {
+      console.log('正在调用cylinder2爆炸效果...');
+      const cylinder2Exploded = this.components.crtShell.toggleCylinder2Explode(exploded);
+      console.log('Cylinder2爆炸状态:', cylinder2Exploded);
+    } else {
+      console.warn('无法调用cylinder2爆炸效果:', {
+        crtShell: !!this.components.crtShell,
+        toggleMethod: !!(this.components.crtShell && this.components.crtShell.toggleCylinder2Explode)
+      });
+    }
     
     // 更新按钮文本
     const btn = document.getElementById('toggle-explode-btn');
@@ -387,6 +402,12 @@ export class UIController {
       this.controllers.camera,
       this.controllers.controls
     );
+    
+    // 重置cylinder2爆炸状态
+    if (this.components.crtShell && this.components.crtShell.toggleCylinder2Explode) {
+      this.components.crtShell.toggleCylinder2Explode(false);
+      console.log('重置Cylinder2爆炸状态');
+    }
     
     // 更新分解视图按钮状态
     const explodeBtn = document.getElementById('toggle-explode-btn');

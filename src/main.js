@@ -489,7 +489,8 @@ function initUIController() {
       v2,
       h1,
       h2,
-      screen
+      screen,
+      crtShell
     },
     controllers: {
       camera,

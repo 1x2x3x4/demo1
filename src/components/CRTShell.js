@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { CONFIG } from '../configLoader';
 import { CylinderConnection } from './CylinderConnection.js';
 import { SuperellipseTransition } from './SuperellipseTransition.js';
+import { Cylinder2ExplodeEffect } from './Cylinder2ExplodeEffect.js';
 
 /**
  * CRT正方形透明外壳组件
@@ -21,6 +22,9 @@ export class CRTShell {
     
     // 超椭圆形状渐变
     this.superellipseTransition = null;
+    
+    // cylinder2爆炸效果
+    this.cylinder2ExplodeEffect = null;
     
     this.createShell();
   }
@@ -298,6 +302,9 @@ export class CRTShell {
     
     // 保存圆柱体引用以便后续操作
     this.cylinder2 = cylinder2;
+    
+    // 创建cylinder2的爆炸效果
+    this.createCylinder2ExplodeEffect();
   }
 
   /**
@@ -356,6 +363,44 @@ export class CRTShell {
     
     // 添加到组中
     this.shellGroup.add(this.superellipseTransition.getTransition());
+  }
+
+  /**
+   * 创建cylinder2爆炸效果
+   */
+  createCylinder2ExplodeEffect() {
+    if (!this.cylinder2) {
+      console.warn('Cylinder2 not found, cannot create explode effect');
+      return;
+    }
+    
+    // 创建爆炸效果实例
+    this.cylinder2ExplodeEffect = new Cylinder2ExplodeEffect(
+      this.cylinder2,
+      this.shellGroup
+    );
+  }
+
+  /**
+   * 切换cylinder2爆炸效果
+   * @param {boolean} explode - 是否爆炸，默认为切换状态
+   * @returns {boolean} 当前爆炸状态
+   */
+  toggleCylinder2Explode(explode) {
+    if (!this.cylinder2ExplodeEffect) {
+      console.warn('Cylinder2 explode effect not initialized');
+      return false;
+    }
+    
+    return this.cylinder2ExplodeEffect.toggle(explode);
+  }
+
+  /**
+   * 获取cylinder2爆炸状态
+   * @returns {boolean} 是否处于爆炸状态
+   */
+  isCylinder2Exploded() {
+    return this.cylinder2ExplodeEffect ? this.cylinder2ExplodeEffect.isExploded() : false;
   }
 
   /**
@@ -846,6 +891,12 @@ export class CRTShell {
     if (this.superellipseTransition) {
       this.superellipseTransition.dispose();
       this.superellipseTransition = null;
+    }
+    
+    // 清理cylinder2爆炸效果
+    if (this.cylinder2ExplodeEffect) {
+      this.cylinder2ExplodeEffect.dispose();
+      this.cylinder2ExplodeEffect = null;
     }
     
     this.shellGroup.traverse((child) => {
