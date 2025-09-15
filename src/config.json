@@ -1,7 +1,7 @@
 {
   "CONFIG": {
     "beam": {
-      "intensity": 0.9,
+      "intensity": 1,
       "color": "0x00ff00"
     },
     "deflection": {
@@ -19,7 +19,7 @@
       "frequency": 1,
       "amplitude": 3,
       "phase": 0,
-      "enabled": true
+      "enabled": false
     },
     "screen": {
       "persistence": 0.95,
@@ -31,6 +31,16 @@
     },
     "dotLight": {
       "color": "0xffff00"
+    },
+    "shell": {
+      "visible": true,
+      "opacity": 0.8,
+      "color": "0x88ccff",
+      "size": {
+        "width": 11,
+        "height": 3,
+        "depth": 4
+      }
     },
     "camera": {
       "fov": 45,
@@ -51,14 +61,14 @@
     },
     "materials": {
       "metal": {
-        "color": "0xb0b0b0",
+        "color": "0xE8E8E8",
         "metalness": 0.9,
-        "roughness": 0.2
+        "roughness": 0.1
       },
       "plate": {
-        "color": "0x1e88e5",
-        "metalness": 0.05,
-        "roughness": 0.7
+        "color": "0xE8E8E8",
+        "metalness": 0.9,
+        "roughness": 0.1
       },
       "screen": {
         "color": "0x001a00",

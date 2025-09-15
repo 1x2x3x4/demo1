@@ -11,6 +11,7 @@ export class GuiController {
     this.onDeflectionChange = callbacks.onDeflectionChange || (() => {});
     this.onWaveformChange = callbacks.onWaveformChange || (() => {});
     this.onScreenChange = callbacks.onScreenChange || (() => {});
+    this.onShellChange = callbacks.onShellChange || (() => {});
     
     this.initGui();
   }
@@ -21,6 +22,7 @@ export class GuiController {
     this.initDeflectionControls();
     this.initWaveformControls();
     this.initScreenControls();
+    this.initShellControls();
   }
   
   initBeamControls() {
@@ -105,5 +107,26 @@ export class GuiController {
       .onChange(() => this.onScreenChange(CONFIG.screen));
       
     screenFolder.open();
+  }
+  
+  initShellControls() {
+    const shellFolder = this.gui.addFolder('外壳参数');
+    
+    shellFolder.add(CONFIG.shell, 'visible')
+      .name('显示外壳')
+      .onChange(() => this.onShellChange(CONFIG.shell));
+      
+    shellFolder.add(CONFIG.shell, 'opacity', 0, 1, 0.01)
+      .name('透明度')
+      .onChange(() => this.onShellChange(CONFIG.shell));
+      
+    shellFolder.addColor({ color: CONFIG.shell.color }, 'color')
+      .name('外壳颜色')
+      .onChange((value) => {
+        CONFIG.shell.color = value;
+        this.onShellChange(CONFIG.shell);
+      });
+      
+    shellFolder.open();
   }
 } 

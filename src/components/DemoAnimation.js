@@ -270,6 +270,12 @@ export class DemoAnimation {
     // 保存原始参数
     this.saveOriginalParams();
     
+    // 在动画开始时启用电子束（设置适当的强度）
+    CONFIG.beam.intensity = 0.9;
+    if (this.controllers.onBeamChange) {
+      this.controllers.onBeamChange(CONFIG.beam);
+    }
+    
     console.log('开始第一步，调用playCurrentStep');
     // 开始第一步
     this.playCurrentStep();
@@ -806,7 +812,10 @@ export class DemoAnimation {
         horizontal: { voltage: CONFIG.deflection.horizontal.voltage },
         vertical: { voltage: CONFIG.deflection.vertical.voltage }
       },
-      waveform: { ...CONFIG.waveform }
+      waveform: { ...CONFIG.waveform },
+      beam: {
+        intensity: CONFIG.beam.intensity
+      }
     };
   }
   
@@ -876,6 +885,9 @@ export class DemoAnimation {
     // 恢复波形参数
     Object.assign(CONFIG.waveform, this.originalParams.waveform);
     
+    // 恢复电子束参数
+    CONFIG.beam.intensity = this.originalParams.beam.intensity;
+    
     // 更新控制器
     if (this.controllers.onDeflectionChange) {
       this.controllers.onDeflectionChange(CONFIG.deflection);
@@ -883,6 +895,10 @@ export class DemoAnimation {
     
     if (this.controllers.onWaveformChange) {
       this.controllers.onWaveformChange(CONFIG.waveform);
+    }
+    
+    if (this.controllers.onBeamChange) {
+      this.controllers.onBeamChange(CONFIG.beam);
     }
   }
   

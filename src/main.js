@@ -17,12 +17,14 @@ import { Screen } from './components/Screen';  // 荧光屏
 import { LabelSystem } from './components/LabelSystem';  // 标签系统
 import { ExplodedView } from './components/ExplodedView';  // 分解视图
 import { DemoAnimation } from './components/DemoAnimation';  // 演示动画
+import { CRTShell } from './components/CRTShell';  // CRT外壳
 
 // ===== 全局变量 =====
 let scene, camera, renderer, controls;  // 场景、相机、渲染器、控制器
 let electronBeam, waveformGenerator, screenController;  // 电子束、波形生成器、荧光屏控制器
 let guiController, uiController;  // GUI控制器、UI控制器
 let labelSystem, explodedView, demoAnimation;  // 标签系统、分解视图、演示动画
+let crtShell;  // CRT外壳
 
 // 创建 TWEEN Group 管理动画（解决 TWEEN.update() 弃用问题）
 export const tweenGroup = new TWEEN.Group();
@@ -112,10 +114,24 @@ function initControls() {
 
 // ===== 光源初始化 =====
 function initLights() { 
-  scene.add(new THREE.AmbientLight(0xffffff, 0.6)); // 添加环境光
-  const pl = new THREE.PointLight(0xffffff, 0.8); // 创建点光源
-  pl.position.set(10, 10, 10); // 设置光源位置
-  scene.add(pl); // 将光源添加到场景中
+  // 环境光 - 为金属材质提供基础照明
+  scene.add(new THREE.AmbientLight(0xffffff, 0.4)); 
+  
+  // 主要定向光 - 模拟太阳光，增强金属反射效果
+  const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+  directionalLight.position.set(10, 10, 5);
+  directionalLight.castShadow = true;
+  scene.add(directionalLight);
+  
+  // 补充点光源 - 从不同角度照亮金属表面
+  const pointLight1 = new THREE.PointLight(0xffffff, 0.6);
+  pointLight1.position.set(-10, 8, 8);
+  scene.add(pointLight1);
+  
+  // 第二个点光源 - 增加金属材质的高光效果
+  const pointLight2 = new THREE.PointLight(0xf0f0f0, 0.4);
+  pointLight2.position.set(5, -5, 10);
+  scene.add(pointLight2);
 }
 
 // ===== 网格地面初始化 =====
@@ -136,17 +152,23 @@ function initGrid() {
 
 // ===== 组件初始化 =====
 function initComponents() {
-  // 材质定义
+  // 材质定义 - 增强金属材质效果
   const metalMat = new THREE.MeshStandardMaterial({
     color: CONFIG.materials.metal.color, // 颜色
     metalness: CONFIG.materials.metal.metalness, // 金属度
     roughness: CONFIG.materials.metal.roughness, // 粗糙度
+    envMapIntensity: 1.0, // 环境贴图强度，增强金属反射
+    clearcoat: 0.1, // 清漆层，增加金属光泽
+    clearcoatRoughness: 0.1 // 清漆粗糙度
   });
 
   const plateMat = new THREE.MeshStandardMaterial({
     color: CONFIG.materials.plate.color, // 颜色
     metalness: CONFIG.materials.plate.metalness, // 金属度
     roughness: CONFIG.materials.plate.roughness, // 粗糙度
+    envMapIntensity: 0.8, // 环境贴图强度，增强金属反射
+    clearcoat: 0.05, // 轻微的清漆层
+    clearcoatRoughness: 0.2 // 清漆粗糙度
   });
 
   const screenMat = new THREE.MeshStandardMaterial({
@@ -230,6 +252,10 @@ function initComponents() {
   
   // 初始化荧光屏控制器
   screenController = new Screen(scene, screen);
+  
+  // 初始化CRT外壳
+  crtShell = new CRTShell();
+  scene.add(crtShell.getShell());
 }
 
 // ===== 标签系统初始化 =====
@@ -319,6 +345,13 @@ function initGui() {
     },
     onScreenChange: (screenParams) => {
       screenController.updateMaterial();
+    },
+    onShellChange: (shellParams) => {
+      if (crtShell) {
+        crtShell.setVisible(shellParams.visible);
+        crtShell.setOpacity(shellParams.opacity);
+        crtShell.setColor(parseInt(shellParams.color.replace('#', '0x')));
+      }
     }
   });
 }
@@ -449,6 +482,10 @@ function animate(timestamp) {
   // 更新荧光屏效果
   screenController.update();
   
+  // 更新CRT外壳
+  if (crtShell) {
+    crtShell.update(timestamp);
+  }
   
   // 更新分解视图
   if (explodedView) {
