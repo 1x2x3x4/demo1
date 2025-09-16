@@ -335,14 +335,12 @@ function initLabelSystem() {
 // ===== 分解视图初始化 =====
 function initExplodedView() {
   // 创建分解视图控制器
+  // 注意：电子枪(gun, gunHead)、偏转板(v1, v2, h1, h2)和荧光屏(screen)不参与分解视图
+  // CRT外壳有自己的内部分解机制，因此这里为空
   explodedView = new ExplodedView({
-    gun,
-    gunHead,
-    v1,
-    v2,
-    h1,
-    h2,
-    screen
+    // 空的组件列表 - 所有分解效果由CRT外壳内部处理
+    // 移除了 gun, gunHead, v1, v2, h1, h2, screen, crtShell
+    // 这些组件在分解视图中保持原位不动
   });
 }
 

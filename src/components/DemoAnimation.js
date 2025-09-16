@@ -66,13 +66,57 @@ export class DemoAnimation {
     this.animationSteps.push({
       title: '阴极射线管简介',
       description: '阴极射线管是一种真空电子管，利用电场控制电子束的偏转来显示图像。',
-      duration: 3000,
+      duration: 6000,  // 增加持续时间到6秒
       setup: () => {
         // 使用自定义视角展示整个阴极射线管的全貌
-        return this.setCustomView({
+        const viewPromise = this.setCustomView({
           position: { x: 8, y: 5, z: 12 },  // 稍微远一点的俯视角度
           target: { x: 0, y: 0, z: 0 }      // 观察整个设备中心
         });
+        
+        // 在一半时间（3秒）时点击分解视图按钮和关闭外壳
+        setTimeout(() => {
+          console.log('演示动画：触发分解视图');
+          // 点击分解视图按钮
+          const explodeBtn = document.getElementById('toggle-explode-btn');
+          if (explodeBtn) {
+            explodeBtn.click();
+          }
+          
+          // 稍等一下再关闭外壳
+          setTimeout(() => {
+            console.log('演示动画：关闭外壳');
+            // 查找"显示外壳"的复选框并设置为false
+            const shellCheckboxes = document.querySelectorAll('input[type="checkbox"]');
+            let shellCheckbox = null;
+            
+            // 查找对应的复选框
+            shellCheckboxes.forEach(checkbox => {
+              const label = checkbox.closest('li')?.querySelector('.property-name');
+              if (label && label.textContent.includes('显示外壳')) {
+                shellCheckbox = checkbox;
+              }
+            });
+            
+            if (shellCheckbox && shellCheckbox.checked) {
+              console.log('演示动画：通过复选框关闭外壳');
+              shellCheckbox.click();
+            } else {
+              // 如果找不到复选框，直接通过CONFIG修改
+              console.log('演示动画：直接通过CONFIG关闭外壳');
+              if (window.CONFIG) {
+                window.CONFIG.shell.visible = false;
+                // 触发外壳更新
+                if (this.controllers && this.controllers.onShellChange) {
+                  this.controllers.onShellChange(window.CONFIG.shell);
+                }
+              }
+            }
+          }, 500);
+          
+        }, 3000);  // 在持续时间的一半（3秒）时执行
+        
+        return viewPromise;
       }
     });
     
@@ -232,8 +276,52 @@ export class DemoAnimation {
       description: '阴极射线管是早期显示器的基础技术，为现代显示技术奠定了基础。',
       duration: 3000,
       setup: () => {
-        // 重置所有参数
-        this.resetAllParams();
+        // 还原分解视图状态
+        console.log('演示动画结束：还原分解视图状态');
+        const explodeBtn = document.getElementById('toggle-explode-btn');
+        if (explodeBtn && explodeBtn.textContent === '合并视图') {
+          explodeBtn.click();
+        }
+        
+        // 还原外壳显示状态
+        setTimeout(() => {
+          console.log('演示动画结束：还原外壳显示状态');
+          if (this.originalShellVisible !== undefined) {
+            // 查找"显示外壳"的复选框
+            const shellCheckboxes = document.querySelectorAll('input[type="checkbox"]');
+            let shellCheckbox = null;
+            
+            // 查找对应的复选框
+            shellCheckboxes.forEach(checkbox => {
+              const label = checkbox.closest('li')?.querySelector('.property-name');
+              if (label && label.textContent.includes('显示外壳')) {
+                shellCheckbox = checkbox;
+              }
+            });
+            
+            if (shellCheckbox) {
+              // 如果原始状态和当前状态不同，点击复选框
+              if (shellCheckbox.checked !== this.originalShellVisible) {
+                console.log('演示动画结束：通过复选框还原外壳状态');
+                shellCheckbox.click();
+              }
+            } else {
+              // 直接通过CONFIG还原
+              console.log('演示动画结束：直接通过CONFIG还原外壳状态');
+              if (window.CONFIG) {
+                window.CONFIG.shell.visible = this.originalShellVisible;
+                // 触发外壳更新
+                if (this.controllers && this.controllers.onShellChange) {
+                  this.controllers.onShellChange(window.CONFIG.shell);
+                }
+              }
+            }
+          }
+          
+          // 重置所有参数
+          this.resetAllParams();
+        }, 500);
+        
         return Promise.resolve();
       }
     });
@@ -256,6 +344,10 @@ export class DemoAnimation {
       horizontal: CONFIG.deflection.horizontal.voltage,
       vertical: CONFIG.deflection.vertical.voltage
     };
+    
+    // 保存原始外壳显示状态
+    this.originalShellVisible = CONFIG.shell ? CONFIG.shell.visible : true;
+    console.log('保存原始外壳状态:', this.originalShellVisible);
     
     // 保存极板原始不透明度并设置为50%，提高透明度以便更好地观察电子束
     this.setPlateOpacity(0.5);
@@ -312,6 +404,9 @@ export class DemoAnimation {
       CONFIG.deflection.vertical.voltage = this.originalVoltages.vertical;
       this.originalVoltages = null;
     }
+    
+    // 清理保存的外壳状态
+    this.originalShellVisible = undefined;
     
     // 恢复极板原始不透明度
     this.restorePlateOpacity();

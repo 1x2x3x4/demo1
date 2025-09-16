@@ -222,9 +222,9 @@ export class WaveformGenerator {
    * @param {number} currentHorizontal - 当前水平位置
    */
   detectWaveformReset(currentHorizontal) {
-    // 检测从正值（右侧）跳到负值（左侧）的情况
-    // 这表示开始了新的扫描周期
-    if (this.lastHorizontalPosition > 0.5 && currentHorizontal < -0.5) {
+    // 检测从负值（左侧）跳到正值（右侧）的情况
+    // 这表示开始了新的扫描周期（从右向左扫描完成后跳回右侧重新开始）
+    if (this.lastHorizontalPosition < -0.5 && currentHorizontal > 0.5) {
       // 触发波形重置回调
       if (this.onWaveformReset) {
         this.onWaveformReset();

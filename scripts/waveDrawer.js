@@ -45,7 +45,13 @@ export const WaveDrawer = (function() {
         const phaseVal = CONSTANTS.MATH.TWO_PI * frequency * t + globalPhase;
         const yVolts = calculateVoltage(waveType, phaseVal, amplitude);
         const yPixel = centerY - (yVolts * pxPerVolt);
-        if (x === 0) ctx.moveTo(x, yPixel); else ctx.lineTo(x, yPixel);
+        
+        // 对于从右向左的扫描，我们在最右侧（reversedX最大时）开始新路径
+        if (x === 0) {
+          ctx.moveTo(reversedX, yPixel);
+        } else {
+          ctx.lineTo(reversedX, yPixel);
+        }
       }
       ctx.stroke();
     } catch (error) {
@@ -173,7 +179,9 @@ export const WaveDrawer = (function() {
     ctx.lineWidth = 2.0;
     ctx.globalAlpha = 1.0;
     for (let x = 0; x < canvasWidth; x++) {
-      const t = x * dt - horizontalOffsetSeconds;
+      // 修改扫描方向：从右向左扫描
+      const reversedX = canvasWidth - 1 - x;
+      const t = reversedX * dt - horizontalOffsetSeconds;
       let summedVoltage = 0;
       channels.forEach(line => {
         const { waveType, frequency, amplitude, phaseOffset } = channelParams[line];
@@ -183,7 +191,13 @@ export const WaveDrawer = (function() {
         summedVoltage += channelVoltage;
       });
       const yPixel = centerY - (summedVoltage * pxPerVolt);
-      if (x === 0) ctx.moveTo(x, yPixel); else ctx.lineTo(x, yPixel);
+      
+      // 对于从右向左的扫描，我们在最右侧（reversedX最大时）开始新路径
+      if (x === 0) {
+        ctx.moveTo(reversedX, yPixel);
+      } else {
+        ctx.lineTo(reversedX, yPixel);
+      }
     }
     ctx.stroke();
   }
