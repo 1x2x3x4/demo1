@@ -463,8 +463,8 @@ export default class WaveformRenderer {
       // 计算时间点（相对于中心点）
       const time = i * this.dataTimeInterval + this.viewport.offsetX;
       
-      // 计算X坐标（转换为Canvas坐标系）
-      const x = centerX + time * pixelsPerSecond;
+      // 计算X坐标（转换为Canvas坐标系）- 修改扫描方向：从右向左
+      const x = centerX - time * pixelsPerSecond;
       
       // 获取电压值（注意：这里假设数据是直接的电压值）
       const voltage = this.waveformData[i] + this.viewport.offsetY;

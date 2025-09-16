@@ -39,7 +39,9 @@ export const WaveDrawer = (function() {
       ctx.lineWidth = 2.5;
 
       for (let x = 0; x < canvasWidth; x++) {
-        const t = x * dt - horizontalOffsetSeconds;
+        // 修改扫描方向：从右向左扫描
+        const reversedX = canvasWidth - 1 - x;
+        const t = reversedX * dt - horizontalOffsetSeconds;
         const phaseVal = CONSTANTS.MATH.TWO_PI * frequency * t + globalPhase;
         const yVolts = calculateVoltage(waveType, phaseVal, amplitude);
         const yPixel = centerY - (yVolts * pxPerVolt);

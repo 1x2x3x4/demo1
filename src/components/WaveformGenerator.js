@@ -175,32 +175,32 @@ export class WaveformGenerator {
     
     switch (type) {
       case 'sine':
-        // 正弦波 - 水平锯齿扫描 + 垂直正弦波
-        horizontal = (((t / (Math.PI * 2)) % 1) * 2 - 1) * amplitude;
+        // 正弦波 - 水平锯齿扫描（从右向左）+ 垂直正弦波
+        horizontal = ((1 - ((t / (Math.PI * 2)) % 1)) * 2 - 1) * amplitude;
         vertical = Math.sin(t * freqMultiplier) * amplitude * 0.5; // 使用频率参数
         break;
         
       case 'square':
-        // 方波 - 水平锯齿扫描 + 垂直方波
-        horizontal = (((t / (Math.PI * 2)) % 1) * 2 - 1) * amplitude;
+        // 方波 - 水平锯齿扫描（从右向左）+ 垂直方波
+        horizontal = ((1 - ((t / (Math.PI * 2)) % 1)) * 2 - 1) * amplitude;
         vertical = (Math.sin(t * freqMultiplier) >= 0 ? 1 : -1) * amplitude * 0.5;
         break;
         
       case 'triangle':
-        // 三角波 - 水平锯齿扫描 + 垂直三角波
-        horizontal = (((t / (Math.PI * 2)) % 1) * 2 - 1) * amplitude;
+        // 三角波 - 水平锯齿扫描（从右向左）+ 垂直三角波
+        horizontal = ((1 - ((t / (Math.PI * 2)) % 1)) * 2 - 1) * amplitude;
         vertical = (Math.abs(((t * freqMultiplier / Math.PI) % 2) - 1) * 2 - 1) * amplitude * 0.5;
         break;
         
       case 'sawtooth':
-        // 锯齿波 - 水平锯齿扫描 + 垂直锯齿波
-        horizontal = (((t / (Math.PI * 2)) % 1) * 2 - 1) * amplitude;
+        // 锯齿波 - 水平锯齿扫描（从右向左）+ 垂直锯齿波
+        horizontal = ((1 - ((t / (Math.PI * 2)) % 1)) * 2 - 1) * amplitude;
         vertical = (((t * freqMultiplier / (Math.PI * 2)) % 1) * 2 - 1) * amplitude * 0.5;
         break;
         
       default:
-        // 默认为简单的水平扫描
-        horizontal = (((t / (Math.PI * 2)) % 1) * 2 - 1) * amplitude;
+        // 默认为简单的水平扫描（从右向左）
+        horizontal = ((1 - ((t / (Math.PI * 2)) % 1)) * 2 - 1) * amplitude;
         vertical = 0;
     }
     
@@ -210,7 +210,7 @@ export class WaveformGenerator {
       return { horizontal: 0, vertical: 0 };
     }
     
-    // 检测波形重置（水平位置从右侧跳回左侧）
+    // 检测波形重置（水平位置从左侧跳回右侧）
     this.detectWaveformReset(horizontal);
     
     return { horizontal, vertical };
@@ -218,7 +218,7 @@ export class WaveformGenerator {
 
 
   /**
-   * 检测波形重置（水平扫描从右端跳回左端）
+   * 检测波形重置（水平扫描从左端跳回右端）
    * @param {number} currentHorizontal - 当前水平位置
    */
   detectWaveformReset(currentHorizontal) {

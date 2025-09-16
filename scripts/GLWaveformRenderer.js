@@ -120,8 +120,8 @@ export default class GLWaveformRenderer {
     // 设置点大小
     gl.uniform1f(this.pointSizeLocation, 1.0);
     
-    // 准备顶点数据
-    const positions = new Float32Array(waveformData.flatMap((point, i) => [i, point]));
+    // 准备顶点数据 - 修改扫描方向：从右向左
+    const positions = new Float32Array(waveformData.flatMap((point, i) => [waveformData.length - 1 - i, point]));
     
     // 准备颜色数据
     const colors = new Float32Array(waveformData.length * 4).fill(0);

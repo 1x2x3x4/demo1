@@ -321,85 +321,81 @@ export class SuperellipseExplodeEffect {
    * 分解积木块
    */
   explodeBlocks() {
-    this.blocks.forEach((block, index) => {
-      // 显示积木块
-      block.mesh.visible = true;
-      
-      // 计算目标位置
-      const targetPosition = this.calculateExplodedPosition(block);
-      
-      // 创建位置动画（带延迟以产生连锁效果）
-      const delay = index * 120; // 120ms的延迟间隔
-      
-      const positionTween = new TWEEN.Tween(block.mesh.position, tweenGroup)
-        .to({
-          x: targetPosition.x,
-          y: targetPosition.y,
-          z: targetPosition.z
-        }, this.config.animationDuration)
-        .delay(delay)
-        .easing(TWEEN.Easing.Back.Out)
-        .start();
-      
-      // 保持原始旋转，不添加随机旋转以避免视觉不一致
-      const rotationTween = new TWEEN.Tween(block.mesh.rotation, tweenGroup)
-        .to({
-          x: block.originalRotation.x,
-          y: block.originalRotation.y,
-          z: block.originalRotation.z
-        }, this.config.animationDuration)
-        .delay(delay)
-        .easing(TWEEN.Easing.Back.Out)
-        .start();
-      
-      this.tweens.push(positionTween, rotationTween);
-    });
+    this.animateBlocks(true); // true表示分解
   }
   
   /**
    * 组装积木块
    */
-   assembleBlocks() {
-     let completedAnimations = 0;
-     const totalAnimations = this.blocks.length;
-     
-     this.blocks.forEach((block, index) => {
-       // 创建回归动画（反向延迟以产生重新组装效果）
-       const delay = (this.blocks.length - index - 1) * 100; // 反向延迟
-       
-       const positionTween = new TWEEN.Tween(block.mesh.position, tweenGroup)
-         .to({
-           x: block.originalPosition.x,
-           y: block.originalPosition.y,
-           z: block.originalPosition.z
-         }, this.config.animationDuration * 0.8)
-         .delay(delay)
-         .easing(TWEEN.Easing.Back.In)
-         .onComplete(() => {
-           completedAnimations++;
-           // 所有块组装完成后，隐藏所有积木块并显示原始网格
-           if (completedAnimations === totalAnimations) {
-             this.blocks.forEach(b => b.mesh.visible = false);
-             this.originalMesh.visible = this.originalVisible;
-             console.log('超椭圆组装完成，显示原始网格');
-           }
-         })
-         .start();
-       
-       // 恢复原始旋转
-       const rotationTween = new TWEEN.Tween(block.mesh.rotation, tweenGroup)
-         .to({
-           x: block.originalRotation.x,
-           y: block.originalRotation.y,
-           z: block.originalRotation.z
-         }, this.config.animationDuration * 0.8)
-         .delay(delay)
-         .easing(TWEEN.Easing.Back.In)
-         .start();
-       
-       this.tweens.push(positionTween, rotationTween);
-     });
-   }
+  assembleBlocks() {
+    this.animateBlocks(false); // false表示组装
+  }
+  
+  /**
+   * 统一的动画处理函数
+   * @param {boolean} explode - true为分解，false为组装
+   */
+  animateBlocks(explode) {
+    let completedAnimations = 0;
+    const totalAnimations = this.blocks.length;
+    
+    this.blocks.forEach((block, index) => {
+      // 显示或隐藏积木块的逻辑
+      if (explode) {
+        block.mesh.visible = true;
+      }
+      
+      // 计算目标位置和旋转
+      const targetPosition = explode 
+        ? this.calculateExplodedPosition(block) 
+        : block.originalPosition;
+      const targetRotation = block.originalRotation;
+      
+      // 统一延迟时间：都使用120ms间隔
+      const delay = index * 120;
+      
+      // 统一动画持续时间
+      const duration = this.config.animationDuration;
+      
+      // 统一缓动函数：都使用Back.Out
+      const easing = TWEEN.Easing.Back.Out;
+      
+      // 创建位置动画
+      const positionTween = new TWEEN.Tween(block.mesh.position, tweenGroup)
+        .to({
+          x: targetPosition.x,
+          y: targetPosition.y,
+          z: targetPosition.z
+        }, duration)
+        .delay(delay)
+        .easing(easing)
+        .onComplete(() => {
+          if (!explode) {
+            completedAnimations++;
+            // 组装完成后的处理
+            if (completedAnimations === totalAnimations) {
+              this.blocks.forEach(b => b.mesh.visible = false);
+              this.originalMesh.visible = this.originalVisible;
+              console.log('超椭圆组装完成，显示原始网格');
+            }
+          }
+        })
+        .start();
+      
+      // 创建旋转动画
+      const rotationTween = new TWEEN.Tween(block.mesh.rotation, tweenGroup)
+        .to({
+          x: targetRotation.x,
+          y: targetRotation.y,
+          z: targetRotation.z
+        }, duration)
+        .delay(delay)
+        .easing(easing)
+        .start();
+      
+      this.tweens.push(positionTween, rotationTween);
+    });
+  }
   
   /**
    * 清理资源
