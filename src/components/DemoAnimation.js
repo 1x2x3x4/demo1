@@ -220,8 +220,8 @@ export class DemoAnimation {
       setup: () => {
         // 使用自定义视角，从左前方、上方观察整个阴极射线管和波形显示
         const resetPromise = this.setCustomView({
-          position: { x: -6, y: 4, z: -4 },      // 从左前方、上方观察整个装置
-          target: { x: 1.5, y: 0, z: 0 }         // 聚焦到整个装置的中心
+          position: { x: 14, y: 1, z: -2.5 },       
+          target: { x: 0, y: 0, z: 0 }         // 聚焦到整个装置的中心
         });
         
         // 启用波形和电子束
@@ -276,12 +276,20 @@ export class DemoAnimation {
       description: '阴极射线管是早期显示器的基础技术，为现代显示技术奠定了基础。',
       duration: 3000,
       setup: () => {
+        // 设置自定义视角，展示整个阴极射线管的完整视图
+        const viewPromise = this.setCustomView({
+          position: { x: 6, y: 4, z: 10 },
+          target: { x: 0, y: 0, z: 0 }
+        });
+        
         // 还原分解视图状态
-        console.log('演示动画结束：还原分解视图状态');
-        const explodeBtn = document.getElementById('toggle-explode-btn');
-        if (explodeBtn && explodeBtn.textContent === '合并视图') {
-          explodeBtn.click();
-        }
+        setTimeout(() => {
+          console.log('演示动画结束：还原分解视图状态');
+          const explodeBtn = document.getElementById('toggle-explode-btn');
+          if (explodeBtn && explodeBtn.textContent === '合并视图') {
+            explodeBtn.click();
+          }
+        }, 500);
         
         // 还原外壳显示状态
         setTimeout(() => {
@@ -320,9 +328,9 @@ export class DemoAnimation {
           
           // 重置所有参数
           this.resetAllParams();
-        }, 500);
+        }, 1000);
         
-        return Promise.resolve();
+        return viewPromise;
       }
     });
   }

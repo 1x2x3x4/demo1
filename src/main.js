@@ -376,6 +376,37 @@ function initDemoAnimation() {
   
   // 设置全局引用供波形生成器使用
   window.demoAnimation = demoAnimation;
+  
+  // ===== 视角查看器 - 在控制台查看当前摄像头位置和目标 =====
+  window.getView = function() {
+    if (!camera || !controls) {
+      console.warn('⚠️ 摄像头或控制器未初始化');
+      return null;
+    }
+    
+    const viewInfo = {
+      position: { 
+        x: Math.round(camera.position.x * 100) / 100,
+        y: Math.round(camera.position.y * 100) / 100, 
+        z: Math.round(camera.position.z * 100) / 100 
+      },
+      target: { 
+        x: Math.round(controls.target.x * 100) / 100,
+        y: Math.round(controls.target.y * 100) / 100, 
+        z: Math.round(controls.target.z * 100) / 100 
+      }
+    };
+    
+    console.log('📷 当前视角信息:');
+    console.log('位置 (position):', viewInfo.position);
+    console.log('目标 (target):', viewInfo.target);
+    console.log('---');
+    console.log('复制用代码:');
+    console.log(`position: { x: ${viewInfo.position.x}, y: ${viewInfo.position.y}, z: ${viewInfo.position.z} }`);
+    console.log(`target: { x: ${viewInfo.target.x}, y: ${viewInfo.target.y}, z: ${viewInfo.target.z} }`);
+    
+    return viewInfo;
+  };
 }
 
 // ===== GUI初始化 =====
