@@ -3,6 +3,7 @@ import { CONFIG } from '../configLoader';
 import { CylinderConnection } from './CylinderConnection.js';
 import { SuperellipseTransition } from './SuperellipseTransition.js';
 import { Cylinder2ExplodeEffect } from './Cylinder2ExplodeEffect.js';
+import { RotationCurveExplodeEffect } from './RotationCurveExplodeEffect.js';
 
 /**
  * CRT正方形透明外壳组件
@@ -25,6 +26,9 @@ export class CRTShell {
     
     // cylinder2爆炸效果
     this.cylinder2ExplodeEffect = null;
+    
+    // 旋转曲线连接爆炸效果
+    this.rotationCurveExplodeEffect = null;
     
     this.createShell();
   }
@@ -326,6 +330,9 @@ export class CRTShell {
     
     // 添加到组中
     this.shellGroup.add(this.cylinderConnection.getConnection());
+    
+    // 创建旋转曲线连接爆炸效果
+    this.createConnectionExplodeEffect();
   }
 
   /**
@@ -366,6 +373,29 @@ export class CRTShell {
   }
 
   /**
+   * 创建旋转曲线连接爆炸效果
+   */
+  createConnectionExplodeEffect() {
+    if (!this.cylinderConnection) {
+      console.warn('CylinderConnection not found, cannot create explode effect');
+      return;
+    }
+    
+    // 获取连接网格（第一个连接网格）
+    const connectionMeshes = this.cylinderConnection.connectionMeshes;
+    if (!connectionMeshes || connectionMeshes.length === 0) {
+      console.warn('No connection meshes found');
+      return;
+    }
+    
+    // 创建爆炸效果实例
+    this.rotationCurveExplodeEffect = new RotationCurveExplodeEffect(
+      connectionMeshes[0], // 使用第一个连接网格
+      this.shellGroup
+    );
+  }
+
+  /**
    * 创建cylinder2爆炸效果
    */
   createCylinder2ExplodeEffect() {
@@ -401,6 +431,28 @@ export class CRTShell {
    */
   isCylinder2Exploded() {
     return this.cylinder2ExplodeEffect ? this.cylinder2ExplodeEffect.isExploded() : false;
+  }
+
+  /**
+   * 切换旋转曲线连接爆炸效果
+   * @param {boolean} explode - 是否爆炸，默认为切换状态
+   * @returns {boolean} 当前爆炸状态
+   */
+  toggleConnectionExplode(explode) {
+    if (!this.rotationCurveExplodeEffect) {
+      console.warn('RotationCurve explode effect not initialized');
+      return false;
+    }
+    
+    return this.rotationCurveExplodeEffect.toggle(explode);
+  }
+
+  /**
+   * 获取旋转曲线连接爆炸状态
+   * @returns {boolean} 是否处于爆炸状态
+   */
+  isConnectionExploded() {
+    return this.rotationCurveExplodeEffect ? this.rotationCurveExplodeEffect.isExploded() : false;
   }
 
   /**
@@ -897,6 +949,12 @@ export class CRTShell {
     if (this.cylinder2ExplodeEffect) {
       this.cylinder2ExplodeEffect.dispose();
       this.cylinder2ExplodeEffect = null;
+    }
+    
+    // 清理旋转曲线连接爆炸效果
+    if (this.rotationCurveExplodeEffect) {
+      this.rotationCurveExplodeEffect.dispose();
+      this.rotationCurveExplodeEffect = null;
     }
     
     this.shellGroup.traverse((child) => {

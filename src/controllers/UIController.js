@@ -384,6 +384,18 @@ export class UIController {
       });
     }
     
+    // 同时切换旋转曲线连接的爆炸效果
+    if (this.components.crtShell && this.components.crtShell.toggleConnectionExplode) {
+      console.log('正在调用旋转曲线连接爆炸效果...');
+      const connectionExploded = this.components.crtShell.toggleConnectionExplode(exploded);
+      console.log('旋转曲线连接爆炸状态:', connectionExploded);
+    } else {
+      console.warn('无法调用旋转曲线连接爆炸效果:', {
+        crtShell: !!this.components.crtShell,
+        toggleMethod: !!(this.components.crtShell && this.components.crtShell.toggleConnectionExplode)
+      });
+    }
+    
     // 更新按钮文本
     const btn = document.getElementById('toggle-explode-btn');
     if (btn) {
@@ -407,6 +419,12 @@ export class UIController {
     if (this.components.crtShell && this.components.crtShell.toggleCylinder2Explode) {
       this.components.crtShell.toggleCylinder2Explode(false);
       console.log('重置Cylinder2爆炸状态');
+    }
+    
+    // 重置旋转曲线连接爆炸状态
+    if (this.components.crtShell && this.components.crtShell.toggleConnectionExplode) {
+      this.components.crtShell.toggleConnectionExplode(false);
+      console.log('重置旋转曲线连接爆炸状态');
     }
     
     // 更新分解视图按钮状态
