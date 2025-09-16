@@ -4,6 +4,7 @@ import { CylinderConnection } from './CylinderConnection.js';
 import { SuperellipseTransition } from './SuperellipseTransition.js';
 import { Cylinder2ExplodeEffect } from './Cylinder2ExplodeEffect.js';
 import { RotationCurveExplodeEffect } from './RotationCurveExplodeEffect.js';
+import { SuperellipseExplodeEffect } from './SuperellipseExplodeEffect.js';
 
 /**
  * CRT正方形透明外壳组件
@@ -29,6 +30,9 @@ export class CRTShell {
     
     // 旋转曲线连接爆炸效果
     this.rotationCurveExplodeEffect = null;
+    
+    // 超椭圆形状渐变爆炸效果
+    this.superellipseExplodeEffect = null;
     
     this.createShell();
   }
@@ -370,6 +374,9 @@ export class CRTShell {
     
     // 添加到组中
     this.shellGroup.add(this.superellipseTransition.getTransition());
+    
+    // 创建超椭圆形状渐变爆炸效果
+    this.createSuperellipseExplodeEffect();
   }
 
   /**
@@ -407,6 +414,29 @@ export class CRTShell {
     // 创建爆炸效果实例
     this.cylinder2ExplodeEffect = new Cylinder2ExplodeEffect(
       this.cylinder2,
+      this.shellGroup
+    );
+  }
+
+  /**
+   * 创建超椭圆形状渐变爆炸效果
+   */
+  createSuperellipseExplodeEffect() {
+    if (!this.superellipseTransition) {
+      console.warn('SuperellipseTransition not found, cannot create explode effect');
+      return;
+    }
+    
+    // 获取超椭圆的网格（第一个网格）
+    const transitionMeshes = this.superellipseTransition.meshes;
+    if (!transitionMeshes || transitionMeshes.length === 0) {
+      console.warn('No superellipse meshes found');
+      return;
+    }
+    
+    // 创建爆炸效果实例
+    this.superellipseExplodeEffect = new SuperellipseExplodeEffect(
+      transitionMeshes[0], // 使用第一个网格
       this.shellGroup
     );
   }
@@ -453,6 +483,28 @@ export class CRTShell {
    */
   isConnectionExploded() {
     return this.rotationCurveExplodeEffect ? this.rotationCurveExplodeEffect.isExploded() : false;
+  }
+
+  /**
+   * 切换超椭圆形状渐变爆炸效果
+   * @param {boolean} explode - 是否爆炸，默认为切换状态
+   * @returns {boolean} 当前爆炸状态
+   */
+  toggleSuperellipseExplode(explode) {
+    if (!this.superellipseExplodeEffect) {
+      console.warn('Superellipse explode effect not initialized');
+      return false;
+    }
+    
+    return this.superellipseExplodeEffect.toggle(explode);
+  }
+
+  /**
+   * 获取超椭圆形状渐变爆炸状态
+   * @returns {boolean} 是否处于爆炸状态
+   */
+  isSuperellipseExploded() {
+    return this.superellipseExplodeEffect ? this.superellipseExplodeEffect.isExploded() : false;
   }
 
   /**
@@ -955,6 +1007,12 @@ export class CRTShell {
     if (this.rotationCurveExplodeEffect) {
       this.rotationCurveExplodeEffect.dispose();
       this.rotationCurveExplodeEffect = null;
+    }
+    
+    // 清理超椭圆形状渐变爆炸效果
+    if (this.superellipseExplodeEffect) {
+      this.superellipseExplodeEffect.dispose();
+      this.superellipseExplodeEffect = null;
     }
     
     this.shellGroup.traverse((child) => {

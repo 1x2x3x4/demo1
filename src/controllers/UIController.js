@@ -396,6 +396,18 @@ export class UIController {
       });
     }
     
+    // 同时切换超椭圆形状渐变的爆炸效果
+    if (this.components.crtShell && this.components.crtShell.toggleSuperellipseExplode) {
+      console.log('正在调用超椭圆形状渐变爆炸效果...');
+      const superellipseExploded = this.components.crtShell.toggleSuperellipseExplode(exploded);
+      console.log('超椭圆形状渐变爆炸状态:', superellipseExploded);
+    } else {
+      console.warn('无法调用超椭圆形状渐变爆炸效果:', {
+        crtShell: !!this.components.crtShell,
+        toggleMethod: !!(this.components.crtShell && this.components.crtShell.toggleSuperellipseExplode)
+      });
+    }
+    
     // 更新按钮文本
     const btn = document.getElementById('toggle-explode-btn');
     if (btn) {
@@ -425,6 +437,12 @@ export class UIController {
     if (this.components.crtShell && this.components.crtShell.toggleConnectionExplode) {
       this.components.crtShell.toggleConnectionExplode(false);
       console.log('重置旋转曲线连接爆炸状态');
+    }
+    
+    // 重置超椭圆形状渐变爆炸状态
+    if (this.components.crtShell && this.components.crtShell.toggleSuperellipseExplode) {
+      this.components.crtShell.toggleSuperellipseExplode(false);
+      console.log('重置超椭圆形状渐变爆炸状态');
     }
     
     // 更新分解视图按钮状态
