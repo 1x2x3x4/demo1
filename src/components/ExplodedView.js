@@ -19,6 +19,9 @@ export class ExplodedView {
     this.explodeFactor = CONFIG.explodedView.explodeFactor;
     this.tweens = [];
     
+    // 主要组件列表（仅用于聚焦，不参与分解动画）
+    this.focusOnlyComponents = ['gun', 'gunHead', 'v1', 'v2', 'h1', 'h2', 'screen'];
+    
     // 保存原始位置
     this.saveOriginalPositions();
   }
@@ -28,6 +31,11 @@ export class ExplodedView {
    */
   saveOriginalPositions() {
     Object.entries(this.components).forEach(([key, object]) => {
+      // 跳过仅用于聚焦的组件
+      if (this.focusOnlyComponents.includes(key)) {
+        return;
+      }
+      
       if (object && object.position) {
         this.originalPositions.set(key, object.position.clone());
       }
@@ -41,7 +49,9 @@ export class ExplodedView {
    */
   addComponent(key, object) {
     this.components[key] = object;
-    if (object && object.position) {
+    
+    // 跳过仅用于聚焦的组件，不保存其原始位置
+    if (!this.focusOnlyComponents.includes(key) && object && object.position) {
       this.originalPositions.set(key, object.position.clone());
     }
   }
@@ -96,6 +106,9 @@ export class ExplodedView {
     
     // 为每个组件创建动画
     Object.entries(this.components).forEach(([key, object]) => {
+      // 跳过仅用于聚焦的组件
+      if (this.focusOnlyComponents.includes(key)) return;
+      
       if (!object || !object.position) return;
       
       const originalPosition = this.originalPositions.get(key);

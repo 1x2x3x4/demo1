@@ -43,7 +43,6 @@ export class CRTShell {
   createShell() {
     // 立方体外壳材质已删除，不再需要
     // this.shellMaterial = new THREE.MeshPhongMaterial({
-    //   color: parseInt(CONFIG.shell.color),
     //   transparent: true,
     //   opacity: CONFIG.shell.opacity,
     //   side: THREE.DoubleSide,
@@ -529,13 +528,6 @@ export class CRTShell {
     // this.shellMaterial.opacity = Math.max(0, Math.min(1, opacity));
   }
 
-  /**
-   * 设置外壳颜色
-   */
-  setColor(color) {
-    // 立方体外壳已删除，此方法不再有效
-    // this.shellMaterial.color.setHex(color);
-  }
 
   /**
    * 设置外壳位置
@@ -583,7 +575,6 @@ export class CRTShell {
   updateConfig() {
     // 立方体外壳材质已删除，不再需要更新
     // if (this.shellMaterial) {
-    //   this.shellMaterial.color.setHex(parseInt(CONFIG.shell.color));
     //   this.shellMaterial.opacity = CONFIG.shell.opacity;
     // }
     

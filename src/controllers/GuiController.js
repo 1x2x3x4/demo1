@@ -120,12 +120,6 @@ export class GuiController {
       .name('透明度')
       .onChange(() => this.onShellChange(CONFIG.shell));
       
-    shellFolder.addColor({ color: CONFIG.shell.color }, 'color')
-      .name('外壳颜色')
-      .onChange((value) => {
-        CONFIG.shell.color = value;
-        this.onShellChange(CONFIG.shell);
-      });
   
     shellFolder.open();
   }

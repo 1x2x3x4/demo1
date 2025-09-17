@@ -323,12 +323,18 @@ function initLabelSystem() {
 // ===== 分解视图初始化 =====
 function initExplodedView() {
   // 创建分解视图控制器
-  // 注意：电子枪(gun, gunHead)、偏转板(v1, v2, h1, h2)和荧光屏(screen)不参与分解视图
-  // CRT外壳有自己的内部分解机制，因此这里为空
+  // 注意：这些组件不参与分解动画，但需要引用以支持相机聚焦功能
   explodedView = new ExplodedView({
-    // 空的组件列表 - 所有分解效果由CRT外壳内部处理
-    // 移除了 gun, gunHead, v1, v2, h1, h2, screen, crtShell
-    // 这些组件在分解视图中保持原位不动
+    // 添加主要组件的引用，用于相机聚焦功能
+    // 这些组件不会有分解动画，但可以被聚焦
+    gun: gun,
+    gunHead: gunHead, 
+    v1: v1,
+    v2: v2,
+    h1: h1,
+    h2: h2,
+    screen: screen
+    // CRT外壳(crtShell)有自己的内部分解机制，不在此处理
   });
 }
 
@@ -420,13 +426,6 @@ function initGui() {
         crtShell.setVisible(shellParams.visible);
         crtShell.setOpacity(shellParams.opacity);
         
-        // 处理主外壳颜色
-        if (shellParams.color) {
-          const shellColor = parseColor(shellParams.color);
-          if (shellColor !== null) {
-            crtShell.setColor(shellColor);
-          }
-        }
         
         // 处理第一个圆柱体
         if (shellParams.cylinder1) {
