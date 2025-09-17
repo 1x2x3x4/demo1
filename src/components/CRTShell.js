@@ -284,13 +284,15 @@ export class CRTShell {
   createCylinder2() {
     const config = CONFIG.shell.cylinder2;
     
-    // 创建第二个圆柱体的独立材质
-    this.cylinder2Material = new THREE.MeshPhongMaterial({
+    // 使用统一组件材质以确保颜色一致性
+    this.cylinder2Material = new THREE.MeshStandardMaterial({
       color: parseInt(config.color),
       transparent: true,
       opacity: config.opacity,
       side: THREE.DoubleSide,
-      depthWrite: false
+      depthWrite: false,
+      metalness: 0.6,
+      roughness: 0.3
     });
     
     // 创建开放式圆柱体几何体（去掉右侧圆形面）

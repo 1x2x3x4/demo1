@@ -116,13 +116,15 @@ export class CylinderConnection {
    * 创建连接网格
    */
   createConnectionMesh(connectionInfo) {
-    // 创建连接材质
-    const material = new THREE.MeshPhongMaterial({
+    // 创建连接材质 - 使用StandardMaterial以确保颜色一致性
+    const material = new THREE.MeshStandardMaterial({
       color: parseInt(this.connectionConfig.color),
       transparent: true,
       opacity: this.connectionConfig.opacity,
       side: THREE.DoubleSide,
-      depthWrite: false
+      depthWrite: false,
+      metalness: 0.6,
+      roughness: 0.3
     });
     
     this.materials.push(material);

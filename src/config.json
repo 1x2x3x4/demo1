@@ -80,9 +80,9 @@
         "visible": true,
         "segments": 64,
         "radialSegments": 32,
-        "transitionLength": 4.9,
+        "transitionLength": 5.0,
         "startExponent": 2.0,
-        "endExponent": 8.0,
+        "endExponent": 40.0,
         "g2Smoothing": true,
         "color": "0xF0F0F0",
         "opacity": 0.8,
@@ -94,7 +94,7 @@
           "offset": { "x": 0, "y": 0, "z": 0 },
           "description": "形状渐变相对于计算方向的旋转偏移（弧度）"
         },
-        "description": "超椭圆形状渐变配置 - 从圆形平滑过渡到方形（基于|x/a|^m + |y/b|^m = 1）"
+        "description": "超椭圆形状渐变配置 - 从圆形平滑过渡到矩形（基于|x/a|^m + |y/b|^m = 1，更高的endExponent创造更接近矩形的形状）"
       }
     },
     "camera": {

@@ -28,7 +28,7 @@ export class SuperellipseTransition {
       radialSegments: 32,        // 径向分段数
       transitionLength: 2.0,     // 过渡长度
       startExponent: 2.0,        // 起始指数（圆形）
-      endExponent: 8.0,          // 结束指数（圆角方形）
+      endExponent: 100.0,        // 结束指数（完全直角矩形）
       g2Smoothing: true,         // 启用G2五次缓动
       color: 0x66aaff,
       opacity: 0.7,
@@ -215,6 +215,11 @@ export class SuperellipseTransition {
   generateSuperellipseCrossSection(radiusX, radiusY, exponent, segments) {
     const points = [];
     
+    // 当指数非常大时，直接生成矩形
+    if (exponent >= 50) {
+      return this.generateRectangleCrossSection(radiusX, radiusY, segments);
+    }
+    
     for (let i = 0; i < segments; i++) {
       const angle = (i / segments) * Math.PI * 2;
       
@@ -227,12 +232,62 @@ export class SuperellipseTransition {
       const signCos = Math.sign(cosTheta);
       const signSin = Math.sign(sinTheta);
       
-      const powCos = Math.pow(Math.abs(cosTheta), 2 / exponent);
-      const powSin = Math.pow(Math.abs(sinTheta), 2 / exponent);
+      // 避免数值问题：当指数很大时，限制最小值
+      const minValue = 1e-12;
+      const absCos = Math.max(Math.abs(cosTheta), minValue);
+      const absSin = Math.max(Math.abs(sinTheta), minValue);
+      
+      const powCos = Math.pow(absCos, 2 / exponent);
+      const powSin = Math.pow(absSin, 2 / exponent);
       
       const x = radiusX * signCos * powCos;
       const y = radiusY * signSin * powSin;
       
+      points.push(new THREE.Vector2(x, y));
+    }
+    
+    return points;
+  }
+
+  /**
+   * 生成完全直角的矩形截面轮廓
+   * @param {number} radiusX - X轴半径
+   * @param {number} radiusY - Y轴半径  
+   * @param {number} segments - 分段数
+   */
+  generateRectangleCrossSection(radiusX, radiusY, segments) {
+    const points = [];
+    const segmentsPerSide = Math.floor(segments / 4);
+    
+    // 右边（从右下到右上）
+    for (let i = 0; i <= segmentsPerSide; i++) {
+      const t = i / segmentsPerSide;
+      const x = radiusX;
+      const y = radiusY * (2 * t - 1); // -radiusY 到 radiusY
+      points.push(new THREE.Vector2(x, y));
+    }
+    
+    // 上边（从右上到左上）
+    for (let i = 1; i <= segmentsPerSide; i++) {
+      const t = i / segmentsPerSide;
+      const x = radiusX * (1 - 2 * t); // radiusX 到 -radiusX
+      const y = radiusY;
+      points.push(new THREE.Vector2(x, y));
+    }
+    
+    // 左边（从左上到左下）
+    for (let i = 1; i <= segmentsPerSide; i++) {
+      const t = i / segmentsPerSide;
+      const x = -radiusX;
+      const y = radiusY * (1 - 2 * t); // radiusY 到 -radiusY
+      points.push(new THREE.Vector2(x, y));
+    }
+    
+    // 下边（从左下到右下）
+    for (let i = 1; i < segmentsPerSide; i++) {
+      const t = i / segmentsPerSide;
+      const x = radiusX * (2 * t - 1); // -radiusX 到 radiusX
+      const y = -radiusY;
       points.push(new THREE.Vector2(x, y));
     }
     
