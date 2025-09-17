@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { unifiedComponentMaterial } from '../materials/UnifiedComponentMaterial.js';
 
 /**
  * 超椭圆形状渐变组件
@@ -51,14 +52,8 @@ export class SuperellipseTransition {
    * 创建形状渐变过渡
    */
   createTransition() {
-    // 创建材质
-    this.material = new THREE.MeshPhongMaterial({
-      color: this.transitionConfig.color,
-      transparent: true,
-      opacity: this.transitionConfig.opacity,
-      side: THREE.DoubleSide,
-      depthWrite: false
-    });
+    // 使用统一组件材质（示波器内部金属材质）
+    this.material = unifiedComponentMaterial.getMaterial('transition');
 
     // 计算过渡参数
     const transitionInfo = this.calculateTransitionParams();

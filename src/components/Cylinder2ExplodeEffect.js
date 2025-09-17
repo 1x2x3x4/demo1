@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import * as TWEEN from '@tweenjs/tween.js';
 import { CONFIG } from '../configLoader.js';
 import { tweenGroup } from '../main.js';
+import { unifiedComponentMaterial } from '../materials/UnifiedComponentMaterial.js';
 
 /**
  * Cylinder2爆炸分解效果类
@@ -40,14 +41,8 @@ export class Cylinder2ExplodeEffect {
     const radius = config.radius;
     const height = config.height;
     
-    // 创建统一的材质（不使用颜色差异）
-    const blockMaterial = new THREE.MeshPhongMaterial({
-      color: parseInt(config.color),
-      transparent: true,
-      opacity: config.opacity,
-      side: THREE.DoubleSide,
-      depthWrite: false
-    });
+    // 使用统一组件材质（示波器内部金属材质）
+    const blockMaterial = unifiedComponentMaterial.getMaterial('exploded');
     
     // 创建4个扇形分块（四分之一圆）
     for (let i = 0; i < 4; i++) {

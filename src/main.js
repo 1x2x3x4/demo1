@@ -21,6 +21,7 @@ import { ExplodedView } from './components/ExplodedView';  // 分解视图
 import { DemoAnimation } from './components/DemoAnimation';  // 演示动画
 import { CRTShell } from './components/CRTShell';  // CRT外壳
 import { MaterialManager } from './materials/MaterialManager';  // 材质管理器
+import { unifiedComponentMaterial } from './materials/UnifiedComponentMaterial.js';  // 统一组件材质管理器
 
 // ===== 全局变量 =====
 let scene, camera, renderer, controls;  // 场景、相机、渲染器、控制器
@@ -204,6 +205,10 @@ async function initMaterials() {
   console.log('初始化材质管理器...');
   materialManager = new MaterialManager();
   await materialManager.initializeMaterials();
+  
+  console.log('初始化统一组件材质管理器...');
+  await unifiedComponentMaterial.initialize();
+  
   console.log('材质初始化完成');
 }
 

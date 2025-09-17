@@ -3,6 +3,7 @@ import * as TWEEN from '@tweenjs/tween.js';
 import { CONFIG } from '../configLoader.js';
 import { tweenGroup } from '../main.js';
 import { RotationCurveGeometry } from '../geometry/RotationCurveGeometry.js';
+import { unifiedComponentMaterial } from '../materials/UnifiedComponentMaterial.js';
 
 /**
  * 旋转曲线连接爆炸分解效果类
@@ -47,14 +48,8 @@ export class RotationCurveExplodeEffect {
     const radialSegments = config.radialSegments || 32;
     const connectionLength = config.connectionLength || 4.8;
     
-    // 创建统一的材质
-    const ringMaterial = new THREE.MeshPhongMaterial({
-      color: parseInt(config.color),
-      transparent: true,
-      opacity: config.opacity,
-      side: THREE.DoubleSide,
-      depthWrite: false
-    });
+    // 使用统一组件材质（示波器内部金属材质）
+    const ringMaterial = unifiedComponentMaterial.getMaterial('exploded');
     
     // 创建4个扇形段（每个90度）
     for (let i = 0; i < this.config.sectorCount; i++) {
