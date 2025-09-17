@@ -127,25 +127,24 @@ export class WaveformGenerator {
       };
     }
     
-    // 根据波形类型生成不同的扫描模式
-    const scanPattern = this.generateScanPattern(waveformParams);
+    // 根据波形类型生成不同的扫描模式，使用偏转电压作为幅度调制因子
+    const scanPattern = this.generateScanPattern(waveformParams, deflectionParams);
     
-    // 计算最终电压 (基础电压 + 波形值)
-    const finalHorizontal = baseHorizontal + scanPattern.horizontal;
-    const finalVertical = baseVertical + scanPattern.vertical;
-    
+    // 直接返回波形扫描模式产生的电压值（不再与基础电压相加）
+    // 这样偏转电压就控制波形幅度，而不是位置偏移
     return {
-      horizontal: finalHorizontal,
-      vertical: finalVertical
+      horizontal: scanPattern.horizontal,
+      vertical: scanPattern.vertical
     };
   }
   
   /**
    * 根据波形类型生成扫描模式
    * @param {Object} params - 波形参数
+   * @param {Object} deflectionParams - 偏转参数，用于控制波形幅度
    * @returns {Object} - 包含水平和垂直偏转值的对象
    */
-  generateScanPattern(params) {
+  generateScanPattern(params, deflectionParams = null) {
     const { type, frequency, amplitude, phase } = params;
     
     // 添加防护检查
@@ -167,6 +166,25 @@ export class WaveformGenerator {
       return { horizontal: 0, vertical: 0 };
     }
     
+    // 获取偏转电压作为幅度调制因子
+    // 使用基础幅度 + 偏转电压调制，确保即使电压为0也有基本波形显示
+    const baseAmplitude = amplitude * 0.3; // 基础幅度（30%的原始幅度）
+    const horizontalVoltage = deflectionParams?.horizontal?.voltage ?? 0;
+    const verticalVoltage = deflectionParams?.vertical?.voltage ?? 0;
+    
+    // 幅度 = 基础幅度 + (电压调制 * 原始幅度)
+    const horizontalAmplitude = baseAmplitude + (Math.abs(horizontalVoltage) * amplitude * 0.2);
+    const verticalAmplitude = baseAmplitude + (Math.abs(verticalVoltage) * amplitude * 0.2);
+    
+    // 添加防护检查
+    if (isNaN(horizontalAmplitude) || isNaN(verticalAmplitude)) {
+      console.error('波形生成器 - 检测到 NaN 幅度参数:', {
+        horizontalAmplitude,
+        verticalAmplitude
+      });
+      return { horizontal: 0, vertical: 0 };
+    }
+    
     let horizontal = 0;
     let vertical = 0;
     
@@ -176,37 +194,39 @@ export class WaveformGenerator {
     switch (type) {
       case 'sine':
         // 正弦波 - 水平锯齿扫描（从右向左）+ 垂直正弦波
-        horizontal = ((1 - ((t / (Math.PI * 2)) % 1)) * 2 - 1) * amplitude;
-        vertical = Math.sin(t * freqMultiplier) * amplitude * 0.5; // 使用频率参数
+        // 水平扫描的幅度由水平偏转电压控制
+        horizontal = ((1 - ((t / (Math.PI * 2)) % 1)) * 2 - 1) * Math.abs(horizontalAmplitude);
+        // 垂直波形的幅度由垂直偏转电压控制
+        vertical = Math.sin(t * freqMultiplier) * Math.abs(verticalAmplitude) * 0.5;
         break;
         
       case 'square':
         // 方波 - 水平锯齿扫描（从右向左）+ 垂直方波
-        horizontal = ((1 - ((t / (Math.PI * 2)) % 1)) * 2 - 1) * amplitude;
-        vertical = (Math.sin(t * freqMultiplier) >= 0 ? 1 : -1) * amplitude * 0.5;
+        horizontal = ((1 - ((t / (Math.PI * 2)) % 1)) * 2 - 1) * Math.abs(horizontalAmplitude);
+        vertical = (Math.sin(t * freqMultiplier) >= 0 ? 1 : -1) * Math.abs(verticalAmplitude) * 0.5;
         break;
         
       case 'triangle':
         // 三角波 - 水平锯齿扫描（从右向左）+ 垂直三角波
-        horizontal = ((1 - ((t / (Math.PI * 2)) % 1)) * 2 - 1) * amplitude;
-        vertical = (Math.abs(((t * freqMultiplier / Math.PI) % 2) - 1) * 2 - 1) * amplitude * 0.5;
+        horizontal = ((1 - ((t / (Math.PI * 2)) % 1)) * 2 - 1) * Math.abs(horizontalAmplitude);
+        vertical = (Math.abs(((t * freqMultiplier / Math.PI) % 2) - 1) * 2 - 1) * Math.abs(verticalAmplitude) * 0.5;
         break;
         
       case 'sawtooth':
         // 锯齿波 - 水平锯齿扫描（从右向左）+ 垂直锯齿波
-        horizontal = ((1 - ((t / (Math.PI * 2)) % 1)) * 2 - 1) * amplitude;
-        vertical = (((t * freqMultiplier / (Math.PI * 2)) % 1) * 2 - 1) * amplitude * 0.5;
+        horizontal = ((1 - ((t / (Math.PI * 2)) % 1)) * 2 - 1) * Math.abs(horizontalAmplitude);
+        vertical = (((t * freqMultiplier / (Math.PI * 2)) % 1) * 2 - 1) * Math.abs(verticalAmplitude) * 0.5;
         break;
         
       default:
         // 默认为简单的水平扫描（从右向左）
-        horizontal = ((1 - ((t / (Math.PI * 2)) % 1)) * 2 - 1) * amplitude;
+        horizontal = ((1 - ((t / (Math.PI * 2)) % 1)) * 2 - 1) * Math.abs(horizontalAmplitude);
         vertical = 0;
     }
     
     // 最终检查结果
     if (isNaN(horizontal) || isNaN(vertical)) {
-      console.error('波形生成器 - 扫描模式计算结果为 NaN:', { type, t, amplitude, horizontal, vertical });
+      console.error('波形生成器 - 扫描模式计算结果为 NaN:', { type, t, horizontalAmplitude, verticalAmplitude, horizontal, vertical });
       return { horizontal: 0, vertical: 0 };
     }
     

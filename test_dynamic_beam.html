@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>动态弯曲电子束测试</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: #1a1a1a;
+            color: white;
+            font-family: Arial, sans-serif;
+        }
+        
+        .test-panel {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px;
+            border-radius: 8px;
+            z-index: 1000;
+        }
+        
+        .test-button {
+            display: block;
+            margin: 10px 0;
+            padding: 10px 15px;
+            background: #2196F3;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .test-button:hover {
+            background: #0b7dda;
+        }
+        
+        .status {
+            margin: 10px 0;
+            padding: 8px;
+            background: rgba(0, 150, 0, 0.3);
+            border-left: 3px solid #00aa00;
+        }
+        
+        #canvas-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-panel">
+        <h3>🔬 动态电子束测试</h3>
+        <button class="test-button" onclick="testStaticBeam()">测试静态电子束</button>
+        <button class="test-button" onclick="testDynamicSine()">测试动态正弦波</button>
+        <button class="test-button" onclick="testDynamicSquare()">测试动态方波</button>
+        <button class="test-button" onclick="testDynamicTriangle()">测试动态三角波</button>
+        <button class="test-button" onclick="toggleWaveform()">开关波形</button>
+        <div id="status" class="status">准备测试...</div>
+    </div>
+    
+    <div id="canvas-container"></div>
+
+    <script type="module">
+        // 简化的测试配置
+        const testConfig = {
+            waveform: {
+                type: 'sine',
+                frequency: 1,
+                amplitude: 1.5,
+                phase: 0,
+                enabled: false
+            },
+            deflection: {
+                horizontal: { voltage: 0, maxDeflection: 3.0 },
+                vertical: { voltage: 0, maxDeflection: 2.5 }
+            }
+        };
+        
+        let isWaveformEnabled = false;
+        
+        // 测试函数
+        window.testStaticBeam = function() {
+            updateStatus('测试静态电子束 - 无波形偏转');
+            testConfig.waveform.enabled = false;
+            testConfig.deflection.vertical.voltage = 2;
+            testConfig.deflection.horizontal.voltage = 1;
+            console.log('静态电子束配置:', testConfig);
+        };
+        
+        window.testDynamicSine = function() {
+            updateStatus('测试动态正弦波 - 整条电子束应该呈现正弦弯曲');
+            testConfig.waveform = {
+                type: 'sine',
+                frequency: 1.5,
+                amplitude: 2,
+                phase: 0,
+                enabled: true
+            };
+            console.log('动态正弦波配置:', testConfig);
+        };
+        
+        window.testDynamicSquare = function() {
+            updateStatus('测试动态方波 - 整条电子束应该呈现方波弯曲');
+            testConfig.waveform = {
+                type: 'square',
+                frequency: 0.8,
+                amplitude: 2.5,
+                phase: 0,
+                enabled: true
+            };
+            console.log('动态方波配置:', testConfig);
+        };
+        
+        window.testDynamicTriangle = function() {
+            updateStatus('测试动态三角波 - 整条电子束应该呈现三角波弯曲');
+            testConfig.waveform = {
+                type: 'triangle',
+                frequency: 1.2,
+                amplitude: 2,
+                phase: 0,
+                enabled: true
+            };
+            console.log('动态三角波配置:', testConfig);
+        };
+        
+        window.toggleWaveform = function() {
+            isWaveformEnabled = !isWaveformEnabled;
+            testConfig.waveform.enabled = isWaveformEnabled;
+            updateStatus(`波形 ${isWaveformEnabled ? '已开启' : '已关闭'}`);
+            console.log('波形状态切换:', isWaveformEnabled);
+        };
+        
+        function updateStatus(message) {
+            document.getElementById('status').textContent = message;
+            console.log('📊 测试状态:', message);
+        }
+        
+        // 初始化状态
+        updateStatus('测试页面已加载 - 请选择测试项目');
+        
+        // 输出测试说明
+        console.log(`
+🔬 动态弯曲电子束测试指南
+========================
+
+本测试页面用于验证电子束的动态弯曲效果：
+
+1. 静态电子束: 电子束应该是直线或固定弯曲
+2. 动态正弦波: 整条电子束应该随时间呈现正弦波弯曲
+3. 动态方波: 整条电子束应该随时间呈现方波弯曲
+4. 动态三角波: 整条电子束应该随时间呈现三角波弯曲
+
+预期效果:
+- 启用波形时，整条电子束应该动态弯曲
+- 不同波形类型应该产生不同的弯曲模式
+- 波形频率和振幅应该影响弯曲的速度和幅度
+
+要查看完整效果，请在主应用中开启波形并观察电子束变化。
+        `);
+    </script>
+</body>
+</html>
+
