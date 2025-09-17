@@ -81,10 +81,6 @@ export class GuiController {
       .name('振幅')
       .onChange(() => this.onWaveformChange(CONFIG.waveform));
       
-    waveformFolder.add(CONFIG.waveform, 'phase', 0, Math.PI * 2, 0.1)
-      .name('相位')
-      .onChange(() => this.onWaveformChange(CONFIG.waveform));
-      
     waveformFolder.open();
   }
   
