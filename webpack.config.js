@@ -62,6 +62,8 @@ module.exports = {
         // 迁移后的引导资源从 src/widgets/tour-guide 输出到 assets/TourGuide
         { from: path.resolve(__dirname, 'src/widgets/tour-guide/config.json'), to: 'assets/TourGuide/config.json' },
         { from: path.resolve(__dirname, 'src/widgets/tour-guide/styles.css'), to: 'assets/TourGuide/tourGuide.css' },
+        // 复制贴图文件
+        { from: path.resolve(__dirname, 'public/textures'), to: 'textures' },
       ],
     }),
   ],

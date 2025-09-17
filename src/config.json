@@ -117,14 +117,20 @@
     },
     "materials": {
       "metal": {
-        "color": "0xC0C0C0",
-        "metalness": 0.9,
-        "roughness": 0.1
+        "color": "0xF0F0F0",
+        "metalness": 0.6,
+        "roughness": 0.3,
+        "textures": {
+          "map": "textures/silver_metal_background_1.jpg"
+        }
       },
       "plate": {
-        "color": "0xE8E8E8",
-        "metalness": 0.9,
-        "roughness": 0.1
+        "color": "0xF0F0F0",
+        "metalness": 0.6,
+        "roughness": 0.3,
+        "textures": {
+          "map": "textures/silver_metal_background_1.jpg"
+        }
       },
       "screen": {
         "color": "0x001a00",

@@ -20,6 +20,7 @@ import { LabelSystem } from './components/LabelSystem';  // 标签系统
 import { ExplodedView } from './components/ExplodedView';  // 分解视图
 import { DemoAnimation } from './components/DemoAnimation';  // 演示动画
 import { CRTShell } from './components/CRTShell';  // CRT外壳
+import { MaterialManager } from './materials/MaterialManager';  // 材质管理器
 
 // ===== 全局变量 =====
 let scene, camera, renderer, controls;  // 场景、相机、渲染器、控制器
@@ -27,6 +28,7 @@ let electronBeam, waveformGenerator, screenController;  // 电子束、波形生
 let guiController, uiController;  // GUI控制器、UI控制器
 let labelSystem, explodedView, demoAnimation;  // 标签系统、分解视图、演示动画
 let crtShell;  // CRT外壳
+let materialManager;  // 材质管理器
 
 // 创建 TWEEN Group 管理动画（解决 TWEEN.update() 弃用问题）
 export const tweenGroup = new TWEEN.Group();
@@ -93,7 +95,7 @@ function parseColor(color) {
 }
 
 // ===== 初始化函数 =====
-function init() {
+async function init() {
   console.log('初始化应用...');
   initScene(); // 初始化场景
   initCamera(); // 初始化相机
@@ -101,6 +103,7 @@ function init() {
   initControls(); // 初始化控制器
   initLights(); // 初始化光源
   initGrid(); // 初始化网格
+  await initMaterials(); // 初始化材质（异步）
   initComponents(); // 初始化组件
   console.log('初始化标签系统...');
   initLabelSystem(); // 初始化标签系统
@@ -196,37 +199,21 @@ function initGrid() {
   scene.add(grid); // 将网格添加到场景中
 }
 
+// ===== 材质初始化 =====
+async function initMaterials() {
+  console.log('初始化材质管理器...');
+  materialManager = new MaterialManager();
+  await materialManager.initializeMaterials();
+  console.log('材质初始化完成');
+}
+
 // ===== 组件初始化 =====
 function initComponents() {
-  // 材质定义 - 增强金属材质效果
-  const metalMat = new THREE.MeshStandardMaterial({
-    color: CONFIG.materials.metal.color, // 颜色
-    metalness: CONFIG.materials.metal.metalness, // 金属度
-    roughness: CONFIG.materials.metal.roughness, // 粗糙度
-    envMapIntensity: 1.0 // 环境贴图强度，增强金属反射
-  });
-
-  const plateMat = new THREE.MeshStandardMaterial({
-    color: CONFIG.materials.plate.color, // 颜色
-    metalness: CONFIG.materials.plate.metalness, // 金属度
-    roughness: CONFIG.materials.plate.roughness, // 粗糙度
-    envMapIntensity: 0.8 // 环境贴图强度，增强金属反射
-  });
-
-  const screenMat = new THREE.MeshStandardMaterial({
-    color: CONFIG.materials.screen.color, // 颜色
-    emissive: CONFIG.screen.color, // 发射颜色
-    emissiveIntensity: CONFIG.screen.intensity, // 发射强度
-    roughness: CONFIG.materials.screen.roughness, // 粗糙度
-    side: THREE.DoubleSide, // 双面渲染
-  });
- 
-  // 创建屏幕中心的光点材质
-  const glowPointMat = new THREE.MeshBasicMaterial({
-    color: CONFIG.dotLight.color,
-    transparent: true,
-    opacity: CONFIG.materials.glow.opacity,
-  });
+  // 从材质管理器获取材质
+  const metalMat = materialManager.getMaterial('metal');
+  const plateMat = materialManager.getMaterial('plate');
+  const screenMat = materialManager.getMaterial('screen');
+  const glowPointMat = materialManager.getMaterial('glowPoint');
 
   // 电子枪
   gun = new THREE.Mesh(
@@ -658,7 +645,9 @@ function animate(timestamp) {
 }
 
 // ===== 启动应用 =====
-init();
+init().catch(error => {
+  console.error('应用初始化失败:', error);
+});
 
 // ===== 初始化右上角切换控件（内部页） =====
 const bootInternalSwitcher = () => {
