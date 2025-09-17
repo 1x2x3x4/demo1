@@ -117,7 +117,7 @@
     },
     "materials": {
       "metal": {
-        "color": "0xE8E8E8",
+        "color": "0xC0C0C0",
         "metalness": 0.9,
         "roughness": 0.1
       },

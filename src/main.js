@@ -203,18 +203,14 @@ function initComponents() {
     color: CONFIG.materials.metal.color, // 颜色
     metalness: CONFIG.materials.metal.metalness, // 金属度
     roughness: CONFIG.materials.metal.roughness, // 粗糙度
-    envMapIntensity: 1.0, // 环境贴图强度，增强金属反射
-    clearcoat: 0.1, // 清漆层，增加金属光泽
-    clearcoatRoughness: 0.1 // 清漆粗糙度
+    envMapIntensity: 1.0 // 环境贴图强度，增强金属反射
   });
 
   const plateMat = new THREE.MeshStandardMaterial({
     color: CONFIG.materials.plate.color, // 颜色
     metalness: CONFIG.materials.plate.metalness, // 金属度
     roughness: CONFIG.materials.plate.roughness, // 粗糙度
-    envMapIntensity: 0.8, // 环境贴图强度，增强金属反射
-    clearcoat: 0.05, // 轻微的清漆层
-    clearcoatRoughness: 0.2 // 清漆粗糙度
+    envMapIntensity: 0.8 // 环境贴图强度，增强金属反射
   });
 
   const screenMat = new THREE.MeshStandardMaterial({
