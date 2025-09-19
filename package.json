@@ -1,17 +1,105 @@
 {
-  "name": "test1",
+  "name": "oscilloscope-simulator",
   "version": "1.0.0",
-  "main": "index.js",
+  "description": "",
+  "main": "electron-main.js",
+  "homepage": "./",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "set NODE_ENV=development && webpack serve --config webpack.config.js --hot",
     "start": "npm run dev",
-    "build": "set NODE_ENV=production && webpack --config webpack.config.js --mode production"
+    "build": "set NODE_ENV=production && webpack --config webpack.config.js --mode production --optimization-minimize && node packaging/optimize-build.js",
+    "electron": "electron .",
+    "electron:dev": "set NODE_ENV=development && concurrently \"npm run dev\" \"wait-on http://localhost:8081 && electron .\"",
+    "electron:pack": "npm run build && electron-builder",
+    "electron:build": "npm run build && electron-builder --publish=never",
+    "electron:build-win": "npm run build && electron-builder --win --publish=never",
+    "electron:build-mac": "npm run build && electron-builder --mac --publish=never",
+    "electron:build-linux": "npm run build && electron-builder --linux --publish=never",
+    "electron:build-all": "npm run build && electron-builder --win --mac --linux --publish=never",
+    "electron:dist": "npm run build && electron-builder --publish=always"
+  },
+  "build": {
+    "appId": "com.oscilloscope.simulator",
+    "productName": "示波器仿真系统",
+    "icon": "assets/icons/icon.png",
+    "directories": {
+      "output": "dist",
+      "buildResources": "assets/icons"
+    },
+    "files": [
+      "electron-main.js",
+      "docs/**/*",
+      "assets/**/*",
+      "!docs/**/*.map"
+    ],
+    "extraResources": [
+      {
+        "from": "docs",
+        "to": "docs"
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "icon.png",
+      "requestedExecutionLevel": "asInvoker"
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ],
+      "category": "public.app-category.education"
+    },
+    "linux": {
+      "target": [
+        {
+          "target": "dir",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "tar.gz",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "category": "Education"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowElevation": true,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "示波器仿真系统"
+    },
+    "dmg": {
+      "title": "示波器仿真系统"
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "your-username",
+      "repo": "oscilloscope-simulator"
+    }
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": "",
   "dependencies": {
     "@tweenjs/tween.js": "^25.0.0",
     "dat.gui": "^0.7.9",
@@ -25,14 +113,18 @@
     "babel-loader": "^10.0.0",
     "babel-plugin-transform-remove-console": "^6.9.4",
     "babel-plugin-transform-remove-debugger": "^6.9.4",
+    "concurrently": "^8.2.2",
     "copy-webpack-plugin": "^12.0.2",
     "core-js": "^3.45.0",
     "css-loader": "^7.1.2",
     "css-minimizer-webpack-plugin": "^7.0.2",
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.1",
     "html-webpack-plugin": "^5.6.3",
     "mini-css-extract-plugin": "^2.9.4",
     "style-loader": "^4.0.0",
     "terser-webpack-plugin": "^5.3.14",
+    "wait-on": "^7.2.0",
     "webpack": "^5.99.9",
     "webpack-cli": "^6.0.1",
     "webpack-dev-server": "^5.2.2"

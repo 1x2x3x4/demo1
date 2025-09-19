@@ -1,12 +1,15 @@
 # 🔬 示波器仿真系统 (Oscilloscope Simulator)
 
-基于WebGL的智能示波器交互式虚拟仿真系统
+基于WebGL的智能示波器交互式虚拟仿真系统  
+🖥️ **支持Web浏览器和桌面应用双模式运行**
 
 ## ✨ 项目特色
 
-### 🎯 双重体验模式
+### 🎯 多重体验模式
 - **📊 标准示波器界面**：完整复现真实示波器的操作面板和功能
 - **🔍 3D内部结构**：深入展示阴极射线管（CRT）的工作原理和电子束轨迹
+- **🖥️ 桌面应用版本**：基于Electron的独立桌面应用，无需浏览器即可运行
+- **🌐 Web版本**：支持现代浏览器，随时随地访问
 
 ### 🎓 教学导向设计
 - **自检校准流程**：模拟真实示波器的校准过程
@@ -53,6 +56,11 @@
 - **dat.GUI 0.7.9**：参数控制面板
 - **Tween.js 25.0.0**：流畅的动画过渡效果
 
+### 桌面应用技术
+- **Electron 33.0.2**：跨平台桌面应用框架
+- **Electron Builder**：自动化打包和分发
+- **Windows/macOS/Linux**：支持三大主流操作系统
+
 ### 构建工具
 - **Webpack 5**：模块打包和构建
 - **Babel**：ES6+代码转译
@@ -77,23 +85,51 @@ npm install
 ```
 
 ### 开发模式
+
+#### Web开发模式
 ```bash
 npm run dev
 # 或
 npm start
 ```
-访问 http://localhost:8080 查看示波器界面
+访问 http://localhost:8081 查看示波器界面
+
+#### Electron开发模式
+```bash
+npm run electron:dev
+```
+自动启动Web服务器并打开Electron窗口
 
 ### 生产构建
+
+#### Web版本构建
 ```bash
 npm run build
 ```
 构建文件将输出到 `docs/` 目录
 
+#### 桌面应用构建
+```bash
+npm run electron:build         # 构建当前平台
+npm run electron:build-win     # 构建Windows版本  
+npm run electron:build-mac     # 构建macOS版本
+npm run electron:build-linux   # 构建Linux版本
+npm run electron:build-all     # 构建所有平台版本
+```
+打包后的应用将输出到 `dist/` 目录
+
 ### 直接使用
+
+#### Web版本
 无需服务器环境，可直接打开构建后的HTML文件：
 - `docs/index.html` - 主要示波器界面
 - `docs/internal.html` - 3D内部结构展示
+
+#### 桌面应用版本
+运行打包后的可执行文件：
+- **Windows**: `dist/示波器仿真系统 Setup 1.0.0.exe`
+- **macOS**: `dist/示波器仿真系统-1.0.0.dmg`
+- **Linux**: `dist/示波器仿真系统-1.0.0.AppImage`
 
 ## 🎯 使用指南
 
@@ -126,14 +162,32 @@ npm run build
 
 ```
 demo1/
+├── 📁 assets/                 # 应用资源
+│   └── 📁 icons/              # 应用图标文件
+│       ├── icon.ico           # Windows图标
+│       ├── icon.png           # 通用图标
+│       └── icon-*.png         # 多尺寸图标
 ├── 📁 CDN/                    # 第三方库CDN版本
 │   └── vue.min.js
-├── 📁 docs/                   # 构建输出目录
+├── 📁 dist/                   # 桌面应用打包输出
+│   ├── win-unpacked/          # Windows解包版本
+│   ├── *.exe                  # Windows安装包
+│   ├── *.dmg                  # macOS安装包
+│   └── *.AppImage             # Linux应用包
+├── 📁 docs/                   # Web版本构建输出
 │   ├── 📁 js/                 # JavaScript bundles
 │   ├── 📁 css/                # 样式文件
 │   ├── 📁 assets/             # 静态资源
 │   ├── index.html             # 主界面
 │   └── internal.html          # 3D内部视图
+├── 📁 packaging/              # Electron打包配置
+│   ├── electron-main.js       # Electron主进程
+│   ├── electron-builder.yml   # 打包配置
+│   ├── build.js               # 构建脚本
+│   ├── optimize-build.js      # 构建优化
+│   ├── install-electron.js    # Electron安装
+│   ├── setup.js               # 项目设置
+│   └── README.md              # 打包说明
 ├── 📁 public/                 # 静态资源
 │   ├── styles.css             # 主样式文件
 │   └── *.html                 # HTML模板
@@ -155,14 +209,14 @@ demo1/
 │   │   └── DemoAnimation.js   # 演示动画
 │   ├── 📁 controllers/        # 控制器
 │   │   ├── GuiController.js   # GUI控制
-│   │   ├── UIController.js    # UI控制
-│   │   └── switcher.js        # 模式切换器
+│   │   └── UIController.js    # UI控制
 │   ├── 📁 widgets/            # UI组件
 │   │   ├── switcher.js        # 切换器组件
 │   │   └── tour-guide/        # 导览系统
 │   ├── main.js                # 3D视图入口
 │   ├── external.js            # 主界面入口
 │   └── configLoader.js        # 配置加载器
+├── electron-main.js           # Electron主进程入口
 ├── package.json               # 项目配置
 ├── webpack.config.js          # 构建配置
 └── README.md                  # 项目文档
@@ -174,6 +228,14 @@ demo1/
 - `webpack.config.js`：构建配置，支持开发和生产环境
 - `src/config.json`：应用配置，包含默认参数和UI设置
 - `scripts/constants.js`：系统常量，定义画布尺寸、网格参数等
+- `packaging/electron-builder.yml`：Electron打包配置
+- `package.json`：项目依赖和构建脚本配置
+
+### 桌面应用配置
+- **应用信息**：名称、版本、描述等在 `package.json` 中配置
+- **图标文件**：位于 `assets/icons/` 目录，支持多种格式和尺寸
+- **打包选项**：在 `packaging/electron-builder.yml` 中自定义打包行为
+- **主进程配置**：`packaging/electron-main.js` 控制窗口行为和应用生命周期
 
 ### 自定义配置
 可以通过修改配置文件来自定义：
@@ -181,6 +243,8 @@ demo1/
 - 网格和画布尺寸
 - 颜色主题
 - 动画参数
+- 桌面应用窗口大小和行为
+- 应用图标和元数据
 
 ## 🎨 界面特性
 
@@ -226,7 +290,9 @@ demo1/
 ### 兼容性
 - **跨浏览器**：支持主流现代浏览器
 - **移动设备**：触摸操作适配
-- **无服务器部署**：可直接部署到静态服务器或CDN
+- **跨平台桌面**：支持Windows、macOS、Linux系统
+- **无服务器部署**：Web版本可直接部署到静态服务器或CDN
+- **离线运行**：桌面应用无需网络连接即可使用
 
 ### 扩展性
 - **模块化架构**：易于添加新功能

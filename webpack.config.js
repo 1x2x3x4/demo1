@@ -3,6 +3,8 @@ const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
+const TerserPlugin = require('terser-webpack-plugin');
+const CssMinimizerPlugin = require('css-minimizer-webpack-plugin');
 
 // 判断是否为开发模式
 const isDev = process.env.NODE_ENV !== 'production';
@@ -20,7 +22,7 @@ module.exports = {
     publicPath: './',                        // 始终使用相对路径，确保打包后的文件可以直接打开
     clean: !isDev,                          // 开发模式不清理，避免影响热重载
   },
-  devtool: isDev ? 'eval-cheap-module-source-map' : 'source-map',
+  devtool: isDev ? 'eval-cheap-module-source-map' : false, // 生产环境移除 source map
   devServer: {
     static: [
       { directory: path.resolve(__dirname, 'docs') },
@@ -62,8 +64,12 @@ module.exports = {
         // 迁移后的引导资源从 src/widgets/tour-guide 输出到 assets/TourGuide
         { from: path.resolve(__dirname, 'src/widgets/tour-guide/config.json'), to: 'assets/TourGuide/config.json' },
         { from: path.resolve(__dirname, 'src/widgets/tour-guide/styles.css'), to: 'assets/TourGuide/tourGuide.css' },
-        // 复制贴图文件
-        { from: path.resolve(__dirname, 'public/textures'), to: 'textures' },
+        // 复制贴图文件（添加图片压缩）
+        { 
+          from: path.resolve(__dirname, 'public/textures'), 
+          to: 'textures',
+          // 可以添加图片压缩插件处理
+        },
       ],
     }),
   ],
@@ -84,5 +90,75 @@ module.exports = {
       'vue$': 'vue/dist/vue.esm.js'  // 使用包含编译器的 Vue 版本（正确路径）
     }
   },
-  performance: { hints: false },
+  // 性能和优化配置
+  performance: { 
+    hints: isDev ? false : 'warning',
+    maxAssetSize: 512000, // 512KB
+    maxEntrypointSize: 512000 // 512KB
+  },
+  
+  // 优化配置
+  optimization: {
+    minimize: !isDev,
+    minimizer: [
+      // JS 压缩
+      new TerserPlugin({
+        terserOptions: {
+          compress: {
+            drop_console: true, // 移除 console
+            drop_debugger: true, // 移除 debugger
+            pure_funcs: ['console.log'], // 移除特定函数调用
+          },
+          mangle: true, // 变量名混淆
+          format: {
+            comments: false, // 移除注释
+          },
+        },
+        extractComments: false, // 不提取注释到单独文件
+      }),
+      // CSS 压缩
+      new CssMinimizerPlugin({
+        minimizerOptions: {
+          preset: [
+            'default',
+            {
+              discardComments: { removeAll: true }, // 移除所有注释
+            },
+          ],
+        },
+      }),
+    ],
+    
+    // 代码分割
+    splitChunks: {
+      chunks: 'all',
+      cacheGroups: {
+        // 第三方库单独打包
+        vendor: {
+          test: /[\\/]node_modules[\\/]/,
+          name: 'vendors',
+          chunks: 'all',
+          priority: 20,
+        },
+        // Three.js 单独打包（较大的库）
+        three: {
+          test: /[\\/]node_modules[\\/]three[\\/]/,
+          name: 'three',
+          chunks: 'all',
+          priority: 30,
+        },
+        // 通用模块
+        common: {
+          name: 'common',
+          minChunks: 2,
+          chunks: 'all',
+          priority: 10,
+        },
+      },
+    },
+    
+    // Tree Shaking 优化
+    usedExports: true,
+    sideEffects: false,
+  },
 };
