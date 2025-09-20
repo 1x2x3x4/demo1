@@ -1,7 +1,7 @@
 {
   "name": "oscilloscope-simulator",
   "version": "1.0.0",
-  "description": "",
+  "description": "示波器仿真系统 - 交互式电子教学工具",
   "main": "electron-main.js",
   "homepage": "./",
   "scripts": {
@@ -11,13 +11,12 @@
     "build": "set NODE_ENV=production && webpack --config webpack.config.js --mode production --optimization-minimize && node packaging/optimize-build.js",
     "electron": "electron .",
     "electron:dev": "set NODE_ENV=development && concurrently \"npm run dev\" \"wait-on http://localhost:8081 && electron .\"",
-    "electron:pack": "npm run build && electron-builder",
-    "electron:build": "npm run build && electron-builder --publish=never",
-    "electron:build-win": "npm run build && electron-builder --win --publish=never",
-    "electron:build-mac": "npm run build && electron-builder --mac --publish=never",
-    "electron:build-linux": "npm run build && electron-builder --linux --publish=never",
-    "electron:build-all": "npm run build && electron-builder --win --mac --linux --publish=never",
-    "electron:dist": "npm run build && electron-builder --publish=always"
+    "dist": "npm run build && electron-builder --publish=never",
+    "dist:all": "npm run build && node packaging/build.js all",
+    "dist:win": "npm run build && node packaging/build.js win",
+    "dist:mac": "npm run build && node packaging/build.js mac",
+    "dist:linux": "npm run build && node packaging/build.js linux",
+    "release": "npm run build && electron-builder --publish=always"
   },
   "build": {
     "appId": "com.oscilloscope.simulator",
