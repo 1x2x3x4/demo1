@@ -3,6 +3,7 @@ import * as TWEEN from '@tweenjs/tween.js';
 import { CONFIG } from '../configLoader.js';
 import { tweenGroup } from '../main.js';
 import { SuperellipsePositioner } from '../utils/SuperellipsePositioner.js';
+import { unifiedComponentMaterial } from '../materials/UnifiedComponentMaterial.js';
 
 /**
  * 超椭圆爆炸分解效果类
@@ -26,8 +27,8 @@ export class SuperellipseExplodeEffect {
     this.config = {
       // 分解距离系数
       explodeDistance: 2.0,
-      // 动画持续时间
-      animationDuration: 1500
+      // 动画持续时间 - 与其他组件保持一致
+      animationDuration: 1200
     };
     
     this.createBlocks();
@@ -43,14 +44,8 @@ export class SuperellipseExplodeEffect {
     // 获取原始几何体
     const originalGeometry = this.originalMesh.geometry;
     
-    // 创建统一的材质
-    const blockMaterial = new THREE.MeshPhongMaterial({
-      color: this.originalMesh.material.color.getHex(),
-      transparent: true,
-      opacity: this.originalMesh.material.opacity,
-      side: THREE.DoubleSide,
-      depthWrite: false
-    });
+    // 使用统一组件材质管理器获取爆炸材质
+    const blockMaterial = unifiedComponentMaterial.getMaterial('exploded');
     
     // 创建4个象限分块
     for (let i = 0; i < 4; i++) {
@@ -274,25 +269,21 @@ export class SuperellipseExplodeEffect {
    * 使用SuperellipsePositioner批量设置位置
    */
   calculateExplodedPosition(block) {
-    // 使用SuperellipsePositioner进行位置管理
-    
-    // 批量设置位置（4个象限子网格）
-    const newPositions = [
+    // 直接返回目标位置，无需使用有问题的Positioner
+    const explodedPositions = [
       { x: 4, y: 1.5, z: 1 },    // 第一象限
       { x: 4, y: -2.5, z: 1 },   // 第二象限
       { x: 4, y: -2.5, z: -1 },  // 第三象限
       { x: 4, y: 1.5, z: -1 }    // 第四象限
     ];
-    this.positioner.setPositions(newPositions);
-
-    // 单独设置某个子网格位置
-    // this.positioner.setPosition(0, { x: 5, y: 5, z: 1 });
-
-    // 获取当前所有位置
-    const currentPositions = this.positioner.getPositions();
     
-    // 返回指定块的位置
-    return this.positioner.getPosition(block.quadrantIndex) || block.originalPosition;
+    // 确保索引有效
+    if (block.quadrantIndex >= 0 && block.quadrantIndex < explodedPositions.length) {
+      return explodedPositions[block.quadrantIndex];
+    }
+    
+    // 回退到原始位置
+    return block.originalPosition;
   }
   
   /**
@@ -351,14 +342,14 @@ export class SuperellipseExplodeEffect {
         : block.originalPosition;
       const targetRotation = block.originalRotation;
       
-      // 统一延迟时间：都使用120ms间隔
-      const delay = index * 120;
+      // 统一延迟时间：分解使用100ms间隔
+      const delay = explode ? index * 100 : (this.blocks.length - index - 1) * 80;
       
-      // 统一动画持续时间
-      const duration = this.config.animationDuration;
+      // 统一动画持续时间：合并动画更快
+      const duration = explode ? this.config.animationDuration : this.config.animationDuration * 0.8;
       
-      // 统一缓动函数：都使用Back.Out
-      const easing = TWEEN.Easing.Back.Out;
+      // 统一缓动函数：分解用Back.Out，合并用Back.In
+      const easing = explode ? TWEEN.Easing.Back.Out : TWEEN.Easing.Back.In;
       
       // 创建位置动画
       const positionTween = new TWEEN.Tween(block.mesh.position, tweenGroup)
