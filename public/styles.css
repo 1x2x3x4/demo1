@@ -53,18 +53,20 @@ aside::-webkit-scrollbar-thumb {
 
 }
 
-/* 控制面板样式 */
+/* 控制面板样式 - 以2560*1440为标准的响应式设计 */
 .control-panel {
   padding: 1rem;
   background: white;
   border-radius: 4px;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
   margin-bottom: 15px;
-  position: relative; /* 添加相对定位 */
-  box-sizing: border-box; /* 确保内边距和边框都计入总宽度，避免宽度变化 */
-  min-height: 400px; /* 设置最小高度，减少高度变化导致的偏移 */
+  position: relative;
+  box-sizing: border-box;
+  min-height: 400px;
   opacity: 1;
-  transition: opacity 0.2s ease; /* 添加过渡效果，使切换更平滑 */
+  transition: all 0.3s ease;
+  width: 100%;
+  max-width: none;
 }
 
 .wave-controls,
@@ -1137,10 +1139,24 @@ input:disabled {
   }
 }
 
-/* 针对2560×1440分辨率的优化 */
+/* 针对2560×1440分辨率的优化 - 基准分辨率 */
 @media screen and (min-width: 2560px) and (min-height: 1440px) {
   body {
     font-size: 16px;
+  }
+  
+  /* 控制面板在2K分辨率下的优化 */
+  .control-panel {
+    padding: 1.5rem;
+    margin-bottom: 20px;
+    min-height: 450px;
+    font-size: 15px;
+  }
+  
+  aside {
+    width: 30%;
+    min-width: 380px;
+    max-width: 550px;
   }
   
   button {
@@ -1151,16 +1167,149 @@ input:disabled {
   input[type="number"] {
     font-size: 15px;
     padding: 5px;
+    width: 70px;
   }
   
   .exp-steps button {
     font-size: 16px;
     padding: 8px 16px;
+    min-width: 120px;
+  }
+  
+  .slider-container {
+    width: 350px;
+  }
+  
+  .slider {
+    width: 350px;
+  }
+  
+  .slider::after {
+    transform: translateX(calc(var(--slider-value, 0) * 338px));
+  }
+  
+  .slider-value-display {
+    left: calc(var(--slider-value, 0) * 338px);
+  }
+  
+  .parameter-control th, 
+  .parameter-control td {
+    padding: 12px 10px;
+    font-size: 15px;
+  }
+  
+  .section-header h3 {
+    font-size: 20px;
+  }
+  
+  .section-label {
+    font-size: 28px;
   }
 }
 
-/* 控制面板响应式布局 */
-@media screen and (max-width: 1200px) {
+/* 标准FHD分辨率 (1920*1080) */
+@media screen and (max-width: 2559px) and (min-width: 1920px), 
+       screen and (max-height: 1439px) and (min-height: 1080px) {
+  .control-panel {
+    padding: 1.2rem;
+    margin-bottom: 18px;
+    min-height: 420px;
+    font-size: 14px;
+  }
+  
+  aside {
+    width: 29%;
+    min-width: 350px;
+    max-width: 500px;
+  }
+  
+  .exp-steps button {
+    font-size: 15px;
+    padding: 7px 14px;
+    min-width: 115px;
+  }
+  
+  .slider-container {
+    width: 320px;
+  }
+  
+  .slider {
+    width: 320px;
+  }
+  
+  .slider::after {
+    transform: translateX(calc(var(--slider-value, 0) * 308px));
+  }
+  
+  .slider-value-display {
+    left: calc(var(--slider-value, 0) * 308px);
+  }
+  
+  input[type="number"] {
+    width: 65px;
+  }
+}
+
+/* 中等分辨率 (1366*768, 1600*900) */
+@media screen and (max-width: 1919px) and (min-width: 1366px) {
+  .control-panel {
+    padding: 1rem;
+    margin-bottom: 15px;
+    min-height: 380px;
+    font-size: 13px;
+  }
+  
+  aside {
+    width: 28%;
+    min-width: 320px;
+    max-width: 450px;
+  }
+  
+  .exp-steps button {
+    font-size: 14px;
+    padding: 6px 12px;
+    min-width: 105px;
+  }
+  
+  .slider-container {
+    width: 280px;
+    margin-left: 40px;
+  }
+  
+  .slider {
+    width: 280px;
+  }
+  
+  .slider::after {
+    transform: translateX(calc(var(--slider-value, 0) * 268px));
+  }
+  
+  .slider-value-display {
+    left: calc(var(--slider-value, 0) * 268px);
+  }
+  
+  input[type="number"] {
+    width: 55px;
+    font-size: 12px;
+  }
+  
+  .parameter-control th, 
+  .parameter-control td {
+    padding: 8px 6px;
+    font-size: 13px;
+  }
+  
+  .section-header h3 {
+    font-size: 17px;
+  }
+  
+  .section-label {
+    font-size: 24px;
+  }
+}
+
+/* 控制面板响应式布局 - 中小屏幕 */
+@media screen and (max-width: 1365px) {
   main {
     flex-direction: column;
   }
@@ -1175,11 +1324,16 @@ input:disabled {
   .control-panel {
     max-width: 800px;
     margin: 0 auto;
+    padding: 0.8rem;
+    min-height: 350px;
+    font-size: 12px;
   }
 
   /* 信号源控制响应式 */
   .signal-source-controls {
     justify-content: center;
+    flex-wrap: wrap;
+    gap: 15px;
   }
 
   /* 参数控制表格响应式 */
@@ -1187,12 +1341,43 @@ input:disabled {
     max-width: 600px;
     margin: 0 auto;
   }
+  
+  .exp-steps button {
+    font-size: 13px;
+    padding: 5px 10px;
+    min-width: 95px;
+  }
+  
+  .slider-container {
+    width: 250px;
+    margin-left: 20px;
+  }
+  
+  .slider {
+    width: 250px;
+  }
+  
+  .slider::after {
+    transform: translateX(calc(var(--slider-value, 0) * 238px));
+  }
+  
+  .slider-value-display {
+    left: calc(var(--slider-value, 0) * 238px);
+  }
 }
 
 @media screen and (max-width: 768px) {
+  .control-panel {
+    padding: 0.7rem;
+    margin-bottom: 12px;
+    min-height: 300px;
+    font-size: 11px;
+  }
+  
   .signal-source-controls {
     flex-direction: column;
     align-items: center;
+    gap: 12px;
   }
 
   .wave-select {
@@ -1211,7 +1396,20 @@ input:disabled {
   .slider-container {
     margin-left: 0;
     width: 100%;
-    max-width: 300px;
+    max-width: 280px;
+  }
+  
+  .slider {
+    width: 100%;
+    max-width: 280px;
+  }
+  
+  .slider::after {
+    transform: translateX(calc(var(--slider-value, 0) * calc(100% - 12px)));
+  }
+  
+  .slider-value-display {
+    left: calc(var(--slider-value, 0) * calc(100% - 12px));
   }
 
   /* 触发控制响应式 */
@@ -1226,23 +1424,118 @@ input:disabled {
     max-width: 200px;
     margin: 8px auto;
   }
-}
-
-/* 优化小屏幕显示 */
-@media screen and (max-width: 480px) {
+  
+  .exp-steps button {
+    font-size: 12px;
+    padding: 4px 8px;
+    min-width: 85px;
+  }
+  
   .parameter-control th, 
   .parameter-control td {
-    padding: 8px 4px;
+    padding: 6px 4px;
+    font-size: 11px;
+  }
+  
+  input[type="number"] {
+    width: 45px;
+    font-size: 11px;
+  }
+  
+  .section-header h3 {
+    font-size: 15px;
+  }
+  
+  .section-label {
+    font-size: 20px;
+  }
+  
+  /* 优化小屏幕的按钮和控件布局 */
+  .wave-select button {
+    padding: 5px 8px;
+    font-size: 11px;
+    margin: 2px;
+  }
+  
+  .arrow-button {
+    padding: 3px 6px;
+    min-width: 26px;
     font-size: 14px;
+  }
+}
+
+/* 优化超小屏幕显示 (480px以下) */
+@media screen and (max-width: 480px) {
+  .control-panel {
+    padding: 0.5rem;
+    margin-bottom: 10px;
+    min-height: 250px;
+    font-size: 10px;
+  }
+
+  .parameter-control th, 
+  .parameter-control td {
+    padding: 5px 3px;
+    font-size: 10px;
   }
 
   input[type="number"] {
-    width: 50px;
-    font-size: 14px;
+    width: 40px;
+    font-size: 10px;
+    padding: 2px;
   }
 
   button {
-    padding: 6px 10px;
-    font-size: 14px;
+    padding: 4px 6px;
+    font-size: 10px;
+  }
+  
+  .exp-steps button {
+    font-size: 10px;
+    padding: 3px 6px;
+    min-width: 70px;
+  }
+  
+  .section-header h3 {
+    font-size: 13px;
+  }
+  
+  .section-label {
+    font-size: 16px;
+  }
+  
+  .slider-container {
+    width: 100%;
+    max-width: 220px;
+  }
+  
+  .slider {
+    width: 100%;
+    max-width: 220px;
+  }
+  
+  .arrow-button {
+    padding: 2px 4px;
+    min-width: 22px;
+    font-size: 12px;
+  }
+  
+  .position-controls {
+    width: 100%;
+    max-width: 180px;
+    padding: 5px;
+  }
+  
+  /* 极小屏幕的特殊优化 */
+  .signal-source-section {
+    border-width: 1px;
+    padding: 10px;
+    margin-bottom: 10px;
+  }
+  
+  .wave-select button {
+    padding: 3px 5px;
+    font-size: 9px;
+    margin: 1px;
   }
 }

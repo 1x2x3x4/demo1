@@ -3,7 +3,26 @@ import { CONFIG, WAVEFORM_TYPES } from '../configLoader';
 
 export class GuiController {
   constructor(callbacks = {}) {
-    this.gui = new dat.GUI({ width: 400 });
+    // 响应式宽度计算 - 基于2560*1440标准向下兼容
+    this.getResponsiveWidth = () => {
+      const width = window.innerWidth;
+      const height = window.innerHeight;
+      
+      // 2K分辨率及以上 (2560*1440+)
+      if (width >= 2560 && height >= 1440) return 400;
+      // 标准FHD (1920*1080)
+      if (width >= 1920 && height >= 1080) return 350;
+      // 中等分辨率 (1366*768, 1600*900)
+      if (width >= 1366) return 300;
+      // 小屏幕 (1024*768)
+      if (width >= 1024) return 260;
+      // 平板 (768px-1023px)
+      if (width >= 768) return 240;
+      // 移动设备 (< 768px)
+      return 220;
+    };
+    
+    this.gui = new dat.GUI({ width: this.getResponsiveWidth() });
     this.callbacks = callbacks;
     
     // 保存回调函数
@@ -14,6 +33,7 @@ export class GuiController {
     this.onShellChange = callbacks.onShellChange || (() => {});
     
     this.initGui();
+    this.setupResponsiveHandlers();
   }
   
   initGui() {
@@ -118,5 +138,56 @@ export class GuiController {
       
   
     shellFolder.open();
+  }
+  
+  /**
+   * 设置响应式处理器
+   */
+  setupResponsiveHandlers() {
+    // 防抖函数
+    let resizeTimeout;
+    const debounce = (func, wait) => {
+      return function executedFunction(...args) {
+        const later = () => {
+          clearTimeout(resizeTimeout);
+          func(...args);
+        };
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(later, wait);
+      };
+    };
+    
+    // 窗口大小改变时调整GUI宽度
+    const handleResize = debounce(() => {
+      const newWidth = this.getResponsiveWidth();
+      if (this.gui && this.gui.domElement) {
+        this.gui.width = newWidth;
+        // 手动更新GUI的DOM样式
+        const guiElement = this.gui.domElement;
+        if (guiElement) {
+          guiElement.style.width = newWidth + 'px';
+        }
+      }
+    }, 250);
+    
+    // 监听窗口大小变化
+    window.addEventListener('resize', handleResize);
+    
+    // 存储清理函数
+    this.cleanup = () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }
+  
+  /**
+   * 销毁GUI控制器
+   */
+  destroy() {
+    if (this.cleanup) {
+      this.cleanup();
+    }
+    if (this.gui) {
+      this.gui.destroy();
+    }
   }
 } 

@@ -101,7 +101,7 @@
       "fov": 45,
       "near": 0.1,
       "far": 1000,
-      "position": { "x": 6, "y": 4, "z": 10 },
+      "position": { "x": 9, "y": 6, "z": 15 },
       "target": { "x": 0, "y": 0, "z": 0 }
     },
     "scene": {
