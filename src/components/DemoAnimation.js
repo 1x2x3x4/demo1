@@ -74,47 +74,11 @@ export class DemoAnimation {
           target: { x: 0, y: 0, z: 0 }      // 观察整个设备中心
         });
         
-        // 在一半时间（3秒）时点击分解视图按钮和关闭外壳
+        // 在2秒时开始CRT外壳分解和消失
         setTimeout(() => {
-          console.log('演示动画：触发分解视图');
-          // 点击分解视图按钮
-          const explodeBtn = document.getElementById('toggle-explode-btn');
-          if (explodeBtn) {
-            explodeBtn.click();
-          }
-          
-          // 稍等一下再关闭外壳
-          setTimeout(() => {
-            console.log('演示动画：关闭外壳');
-            // 查找"显示外壳"的复选框并设置为false
-            const shellCheckboxes = document.querySelectorAll('input[type="checkbox"]');
-            let shellCheckbox = null;
-            
-            // 查找对应的复选框
-            shellCheckboxes.forEach(checkbox => {
-              const label = checkbox.closest('li')?.querySelector('.property-name');
-              if (label && label.textContent.includes('显示外壳')) {
-                shellCheckbox = checkbox;
-              }
-            });
-            
-            if (shellCheckbox && shellCheckbox.checked) {
-              console.log('演示动画：通过复选框关闭外壳');
-              shellCheckbox.click();
-            } else {
-              // 如果找不到复选框，直接通过CONFIG修改
-              console.log('演示动画：直接通过CONFIG关闭外壳');
-              if (window.CONFIG) {
-                window.CONFIG.shell.visible = false;
-                // 触发外壳更新
-                if (this.controllers && this.controllers.onShellChange) {
-                  this.controllers.onShellChange(window.CONFIG.shell);
-                }
-              }
-            }
-          }, 500);
-          
-        }, 3000);  // 在持续时间的一半（3秒）时执行
+          console.log('演示动画：开始CRT外壳分解和消失');
+          this.startCRTShellDisappear();
+        }, 2000);  // 在2秒时开始CRT外壳消失
         
         return viewPromise;
       }
@@ -994,6 +958,9 @@ export class DemoAnimation {
     // 注意：不在这里重置爆炸效果，因为演示结束时已经通过explodeBtn.click()处理了
     // 避免重复操作导致状态不一致
     
+    // 重置CRT外壳状态
+    this.resetCRTShell();
+    
     // 更新控制器
     if (this.controllers.onDeflectionChange) {
       this.controllers.onDeflectionChange(CONFIG.deflection);
@@ -1008,6 +975,65 @@ export class DemoAnimation {
     }
   }
   
+  /**
+   * 重置CRT外壳状态
+   * 恢复外壳的可见性和各组件的分解状态
+   */
+  resetCRTShell() {
+    console.log('重置CRT外壳状态');
+    
+    const crtShell = this.components.crtShell;
+    if (!crtShell) {
+      console.warn('找不到CRTShell组件');
+      return;
+    }
+    
+    const shellGroup = crtShell.getShell();
+    if (!shellGroup) {
+      console.warn('找不到CRT外壳组');
+      return;
+    }
+    
+    // 1. 恢复外壳可见性
+    shellGroup.visible = CONFIG.shell.visible;
+    console.log('恢复外壳可见性:', CONFIG.shell.visible);
+    
+    // 2. 重置各组件的分解状态为合并状态
+    console.log('重置超椭圆分解状态');
+    crtShell.toggleSuperellipseExplode(false);
+    
+    console.log('重置旋转曲线连接分解状态');
+    crtShell.toggleConnectionExplode(false);
+    
+    console.log('重置Cylinder2分解状态');
+    crtShell.toggleCylinder2Explode(false);
+    
+    // 3. 恢复所有材质的透明度
+    this.restoreCRTShellMaterials(shellGroup);
+    
+    console.log('CRT外壳状态重置完成');
+  }
+  
+  /**
+   * 恢复CRT外壳材质的透明度
+   * @param {THREE.Group} shellGroup - CRT外壳组
+   */
+  restoreCRTShellMaterials(shellGroup) {
+    console.log('恢复CRT外壳材质透明度');
+    
+    // 遍历所有子对象，恢复材质透明度
+    shellGroup.traverse((child) => {
+      if (child.material) {
+        const materials = Array.isArray(child.material) ? child.material : [child.material];
+        
+        materials.forEach(material => {
+          // 恢复原始透明度
+          material.opacity = CONFIG.shell.opacity;
+          material.transparent = CONFIG.shell.opacity < 1.0;
+        });
+      }
+    });
+  }
   
   /**
    * 清除所有粒子
@@ -1131,6 +1157,260 @@ export class DemoAnimation {
   printParticlePoolStatus() {
     if (this.particlePool) {
       this.particlePool.printStatus();
+    }
+  }
+  
+  /**
+   * CRT外壳分解和消失效果
+   */
+  startCRTShellDisappear() {
+    console.log('开始CRT外壳分解和消失效果');
+    
+    const crtShell = this.components.crtShell;
+    if (!crtShell) {
+      console.warn('找不到CRTShell组件');
+      return;
+    }
+    
+    // 第一阶段：使用各组件自带的分解动画
+    this.explodeCRTShellComponents(crtShell);
+    
+    // 第二阶段：在分解动画完成后开始渐变消失（1.5秒后开始，持续1.5秒）
+    setTimeout(() => {
+      const shellGroup = crtShell.getShell();
+      if (shellGroup) {
+        this.fadeCRTShell(shellGroup, 1500);
+      }
+    }, 1500); // 等待分解动画完成
+  }
+  
+  /**
+   * 使用各组件自带的分解动画分解CRT外壳
+   * @param {CRTShell} crtShell - CRT外壳组件
+   */
+  explodeCRTShellComponents(crtShell) {
+    console.log('使用组件自带的分解动画分解CRT外壳');
+    
+    // 分解超椭圆组件（带延迟以产生层次感）
+    setTimeout(() => {
+      console.log('分解超椭圆组件');
+      crtShell.toggleSuperellipseExplode(true);
+    }, 0);
+    
+    // 分解旋转曲线连接组件
+    setTimeout(() => {
+      console.log('分解旋转曲线连接组件');
+      crtShell.toggleConnectionExplode(true);
+    }, 200); // 200ms延迟
+    
+    // 分解Cylinder2组件
+    setTimeout(() => {
+      console.log('分解Cylinder2组件');
+      crtShell.toggleCylinder2Explode(true);
+    }, 400); // 400ms延迟
+  }
+  
+  /**
+   * CRT外壳渐变消失
+   * @param {THREE.Group} shellGroup - CRT外壳组
+   * @param {number} duration - 消失持续时间
+   */
+  fadeCRTShell(shellGroup, duration) {
+    console.log('CRT外壳开始渐变消失');
+    
+    // 收集所有外壳材质
+    const materialsToFade = [];
+    shellGroup.traverse((child) => {
+      if (child.material) {
+        if (Array.isArray(child.material)) {
+          materialsToFade.push(...child.material);
+        } else {
+          materialsToFade.push(child.material);
+        }
+      }
+    });
+    
+    // 记录原始透明度并设置透明属性
+    const originalOpacities = materialsToFade.map(material => {
+      const originalOpacity = material.opacity;
+      const originalTransparent = material.transparent;
+      
+      // 确保材质支持透明
+      material.transparent = true;
+      
+      return {
+        material: material,
+        originalOpacity: originalOpacity,
+        originalTransparent: originalTransparent
+      };
+    });
+    
+    // 创建渐变消失动画
+    const fadeOutTween = new TWEEN.Tween({ opacity: 1.0 }, tweenGroup)
+      .to({ opacity: 0.0 }, duration)
+      .easing(TWEEN.Easing.Quadratic.InOut)
+      .onUpdate(function(obj) {
+        materialsToFade.forEach(material => {
+          material.opacity = obj.opacity;
+        });
+      })
+      .onComplete(() => {
+        console.log('CRT外壳消失完成，隐藏外壳');
+        // 完全隐藏外壳
+        shellGroup.visible = false;
+      })
+      .start();
+    
+    this.tweens.push(fadeOutTween);
+  }
+  
+  /**
+   * 开始扩张并渐变消失效果
+   * 让模型继续向外扩张，然后在2秒内渐变消失
+   */
+  startExpandAndFadeOut() {
+    console.log('开始扩张并渐变消失效果');
+    
+    // 获取所有需要处理的组件
+    const crtShell = this.components.crtShell;
+    if (!crtShell) {
+      console.warn('找不到CRTShell组件');
+      return;
+    }
+    
+    // 第一阶段：继续扩张（持续1秒）
+    this.continueExpansion(crtShell, 1000);
+    
+    // 第二阶段：开始渐变消失（1秒后开始，持续2秒）
+    setTimeout(() => {
+      this.startFadeOut(crtShell, 2000);
+    }, 1000);
+  }
+  
+  /**
+   * 继续扩张效果
+   * @param {Object} crtShell - CRTShell组件
+   * @param {number} duration - 扩张持续时间
+   */
+  continueExpansion(crtShell, duration) {
+    console.log('继续扩张效果');
+    
+    // 直接操作所有组件的位置，让它们继续向外扩张
+    Object.entries(this.components).forEach(([key, component]) => {
+      if (!component || !component.position) return;
+      
+      // 计算从原点到当前位置的方向
+      const currentPos = component.position.clone();
+      const direction = currentPos.clone().normalize();
+      
+      // 如果方向为零向量，使用默认方向
+      if (direction.length() === 0) {
+        direction.set(1, 0, 0);
+      }
+      
+      // 计算目标位置（继续向外扩张1.5倍）
+      const targetPos = currentPos.clone().add(direction.multiplyScalar(2.0));
+      
+      // 创建扩张动画
+      const expandTween = new TWEEN.Tween(component.position, tweenGroup)
+        .to({
+          x: targetPos.x,
+          y: targetPos.y,
+          z: targetPos.z
+        }, duration)
+        .easing(TWEEN.Easing.Quadratic.Out)
+        .start();
+        
+      this.tweens.push(expandTween);
+    });
+  }
+  
+  /**
+   * 开始渐变消失效果
+   * @param {Object} crtShell - CRTShell组件
+   * @param {number} duration - 渐变持续时间
+   */
+  startFadeOut(crtShell, duration) {
+    console.log('开始渐变消失效果');
+    
+    // 收集所有需要渐变的材质
+    const materialsToFade = [];
+    
+    // 遍历所有组件，收集材质
+    Object.entries(this.components).forEach(([key, component]) => {
+      if (component && component.material) {
+        materialsToFade.push(component.material);
+      } else if (component && component.traverse) {
+        // 对于组对象，遍历所有子对象
+        component.traverse((child) => {
+          if (child.material) {
+            materialsToFade.push(child.material);
+          }
+        });
+      }
+    });
+    
+    // 记录原始透明度
+    const originalOpacities = materialsToFade.map(material => ({
+      material: material,
+      originalOpacity: material.opacity,
+      originalTransparent: material.transparent
+    }));
+    
+    // 创建渐变动画
+    const fadeOutTween = new TWEEN.Tween({ opacity: 1.0 }, tweenGroup)
+      .to({ opacity: 0.0 }, duration)
+      .easing(TWEEN.Easing.Quadratic.InOut)
+      .onUpdate((object) => {
+        // 更新所有材质的透明度
+        originalOpacities.forEach(({ material, originalOpacity }) => {
+          material.transparent = true;
+          material.opacity = originalOpacity * object.opacity;
+          material.needsUpdate = true;
+        });
+      })
+      .onComplete(() => {
+        console.log('渐变消失完成，隐藏外壳');
+        // 动画完成后，隐藏外壳
+        this.hideShellCompletely();
+      })
+      .start();
+      
+    this.tweens.push(fadeOutTween);
+  }
+  
+  
+  /**
+   * 完全隐藏外壳
+   */
+  hideShellCompletely() {
+    console.log('完全隐藏外壳');
+    
+    // 通过GUI控制器隐藏外壳
+    const shellCheckboxes = document.querySelectorAll('input[type="checkbox"]');
+    let shellCheckbox = null;
+    
+    // 查找对应的复选框
+    shellCheckboxes.forEach(checkbox => {
+      const label = checkbox.closest('li')?.querySelector('.property-name');
+      if (label && label.textContent.includes('显示外壳')) {
+        shellCheckbox = checkbox;
+      }
+    });
+    
+    if (shellCheckbox && shellCheckbox.checked) {
+      console.log('通过复选框隐藏外壳');
+      shellCheckbox.click();
+    } else {
+      // 如果找不到复选框，直接通过CONFIG修改
+      console.log('直接通过CONFIG隐藏外壳');
+      if (window.CONFIG) {
+        window.CONFIG.shell.visible = false;
+        // 触发外壳更新
+        if (this.controllers && this.controllers.onShellChange) {
+          this.controllers.onShellChange(window.CONFIG.shell);
+        }
+      }
     }
   }
 } 

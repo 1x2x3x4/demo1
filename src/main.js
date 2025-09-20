@@ -356,7 +356,8 @@ function initDemoAnimation() {
       h1,
       h2,
       screen: screenController,  // 传递Screen类实例而不是THREE.js网格对象
-      electronBeam
+      electronBeam,
+      crtShell  // 添加crtShell组件
     },
     {
       camera,
