@@ -326,6 +326,7 @@ export class CRTShell {
       return;
     }
     
+    
     // 创建圆柱体连接
     this.cylinderConnection = new CylinderConnection(
       CONFIG.shell.cylinder1,
@@ -349,6 +350,7 @@ export class CRTShell {
     if (!config || !config.visible) {
       return;
     }
+    
     
     // 准备起始配置（第一个圆柱体）
     const startConfig = {
@@ -389,6 +391,12 @@ export class CRTShell {
       return;
     }
     
+    // 清理旧的爆炸效果实例
+    if (this.rotationCurveExplodeEffect) {
+      this.rotationCurveExplodeEffect.dispose();
+      this.rotationCurveExplodeEffect = null;
+    }
+    
     // 获取连接网格（第一个连接网格）
     const connectionMeshes = this.cylinderConnection.connectionMeshes;
     if (!connectionMeshes || connectionMeshes.length === 0) {
@@ -412,6 +420,12 @@ export class CRTShell {
       return;
     }
     
+    // 清理旧的爆炸效果实例
+    if (this.cylinder2ExplodeEffect) {
+      this.cylinder2ExplodeEffect.dispose();
+      this.cylinder2ExplodeEffect = null;
+    }
+    
     // 创建爆炸效果实例
     this.cylinder2ExplodeEffect = new Cylinder2ExplodeEffect(
       this.cylinder2,
@@ -426,6 +440,12 @@ export class CRTShell {
     if (!this.superellipseTransition) {
       console.warn('SuperellipseTransition not found, cannot create explode effect');
       return;
+    }
+    
+    // 清理旧的爆炸效果实例
+    if (this.superellipseExplodeEffect) {
+      this.superellipseExplodeEffect.dispose();
+      this.superellipseExplodeEffect = null;
     }
     
     // 获取超椭圆的网格（第一个网格）
@@ -627,7 +647,8 @@ export class CRTShell {
       );
     } else if (!this.cylinderConnection && CONFIG.shell.rotationCurveConnection?.visible) {
       // 如果连接不存在但配置中要求显示，则创建连接
-      this.createRotationCurveConnection();
+      // 注意：这里不应该重复创建，因为可能导致重复模型
+      console.warn('CylinderConnection not found, but config requires it to be visible');
     }
     
     // 更新超椭圆形状渐变配置
@@ -651,7 +672,8 @@ export class CRTShell {
       );
     } else if (!this.superellipseTransition && CONFIG.shell.superellipseTransition?.visible) {
       // 如果形状渐变不存在但配置中要求显示，则创建渐变
-      this.createSuperellipseTransition();
+      // 注意：这里不应该重复创建，因为可能导致重复模型
+      console.warn('SuperellipseTransition not found, but config requires it to be visible');
     }
     
     // 更新可见性

@@ -93,8 +93,11 @@ export class SuperellipseExplodeEffect {
     const newIndices = [];
     const vertexMap = new Map(); // 用于映射旧顶点索引到新顶点索引
     
-    // 定义象限边界（基于XY平面）
-    const quadrantBounds = this.getQuadrantBounds(quadrantIndex);
+    // 计算实际几何体边界框
+    const boundingBox = this.calculateGeometryBoundingBox(originalGeometry);
+    
+    // 定义基于实际边界的象限边界
+    const quadrantBounds = this.getQuadrantBoundsWithGeometry(quadrantIndex, boundingBox);
     
     // 处理顶点数据
     if (indices) {
@@ -113,8 +116,16 @@ export class SuperellipseExplodeEffect {
           triangleInQuadrant.push(this.isPointInQuadrant(x, y, quadrantBounds));
         }
         
-        // 如果三角形的任何顶点在当前象限，则包含整个三角形
-        if (triangleInQuadrant.some(inQuadrant => inQuadrant)) {
+        // 更智能的三角形分配：基于三角形重心来决定归属
+        const triangleCenter = this.calculateTriangleCenter(triangleVertices);
+        const triangleBelongsToQuadrant = this.isPointInQuadrant(
+          triangleCenter.x, 
+          triangleCenter.y, 
+          quadrantBounds
+        );
+        
+        // 如果三角形重心在当前象限，或者所有顶点都在象限边界上，则包含整个三角形
+        if (triangleBelongsToQuadrant || triangleInQuadrant.every(inQuadrant => inQuadrant)) {
           for (let j = 0; j < 3; j++) {
             const vertex = triangleVertices[j];
             const oldIndex = vertex.index;
@@ -236,7 +247,65 @@ export class SuperellipseExplodeEffect {
   }
   
   /**
-   * 获取象限边界
+   * 计算几何体边界框
+   * @param {THREE.BufferGeometry} geometry - 几何体
+   */
+  calculateGeometryBoundingBox(geometry) {
+    geometry.computeBoundingBox();
+    const box = geometry.boundingBox;
+    
+    return {
+      minX: box.min.x,
+      maxX: box.max.x,
+      minY: box.min.y,
+      maxY: box.max.y,
+      minZ: box.min.z,
+      maxZ: box.max.z,
+      centerX: (box.min.x + box.max.x) / 2,
+      centerY: (box.min.y + box.max.y) / 2,
+      centerZ: (box.min.z + box.max.z) / 2
+    };
+  }
+
+  /**
+   * 获取基于实际几何体的象限边界
+   * @param {number} quadrantIndex - 象限索引 (0-3)
+   * @param {Object} boundingBox - 几何体边界框
+   */
+  getQuadrantBoundsWithGeometry(quadrantIndex, boundingBox) {
+    const { centerX, centerY, minX, maxX, minY, maxY } = boundingBox;
+    
+    switch (quadrantIndex) {
+      case 0: // 第一象限 (+x, +y) - 右上
+        return { 
+          minX: centerX, maxX: maxX, 
+          minY: centerY, maxY: maxY 
+        };
+      case 1: // 第二象限 (-x, +y) - 左上
+        return { 
+          minX: minX, maxX: centerX, 
+          minY: centerY, maxY: maxY 
+        };
+      case 2: // 第三象限 (-x, -y) - 左下
+        return { 
+          minX: minX, maxX: centerX, 
+          minY: minY, maxY: centerY 
+        };
+      case 3: // 第四象限 (+x, -y) - 右下
+        return { 
+          minX: centerX, maxX: maxX, 
+          minY: minY, maxY: centerY 
+        };
+      default:
+        return { 
+          minX: minX, maxX: maxX, 
+          minY: minY, maxY: maxY 
+        };
+    }
+  }
+
+  /**
+   * 获取象限边界（旧版本，保留用于兼容）
    * @param {number} quadrantIndex - 象限索引 (0-3)
    */
   getQuadrantBounds(quadrantIndex) {
@@ -255,6 +324,17 @@ export class SuperellipseExplodeEffect {
   }
   
   /**
+   * 计算三角形重心
+   * @param {Array} triangleVertices - 三角形顶点数组
+   */
+  calculateTriangleCenter(triangleVertices) {
+    const centerX = (triangleVertices[0].x + triangleVertices[1].x + triangleVertices[2].x) / 3;
+    const centerY = (triangleVertices[0].y + triangleVertices[1].y + triangleVertices[2].y) / 3;
+    
+    return { x: centerX, y: centerY };
+  }
+
+  /**
    * 检查点是否在指定象限内
    * @param {number} x - X坐标
    * @param {number} y - Y坐标
@@ -266,20 +346,25 @@ export class SuperellipseExplodeEffect {
   }
   
   /**
-   * 使用SuperellipsePositioner批量设置位置
+   * 计算基于几何体尺寸的分解位置
    */
   calculateExplodedPosition(block) {
-    // 直接返回目标位置，无需使用有问题的Positioner
-    const explodedPositions = [
-      { x: 4, y: 1.5, z: 1 },    // 第一象限
-      { x: 4, y: -2.5, z: 1 },   // 第二象限
-      { x: 4, y: -2.5, z: -1 },  // 第三象限
-      { x: 4, y: 1.5, z: -1 }    // 第四象限
+    // 使用固定的分解位置坐标
+    const offsets = [
+      { x: 1, y: 1.5, z: 1 },    // 第一象限
+      { x: 1, y: -2.5, z: 1 },   // 第二象限
+      { x: 1, y: -2.5, z: -1 },  // 第三象限
+      { x: 1, y: 1.5, z: -1 }    // 第四象限
     ];
     
     // 确保索引有效
-    if (block.quadrantIndex >= 0 && block.quadrantIndex < explodedPositions.length) {
-      return explodedPositions[block.quadrantIndex];
+    if (block.quadrantIndex >= 0 && block.quadrantIndex < offsets.length) {
+      const offset = offsets[block.quadrantIndex];
+      return {
+        x: block.originalPosition.x + offset.x,
+        y: block.originalPosition.y + offset.y,
+        z: block.originalPosition.z + offset.z
+      };
     }
     
     // 回退到原始位置

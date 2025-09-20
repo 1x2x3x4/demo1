@@ -492,8 +492,9 @@ function initGui() {
           }
         }
         
-        // 触发配置更新以保持同步
-        crtShell.updateConfig();
+        // 注意：这里不需要调用updateConfig()，因为上面的set方法已经更新了相应的状态
+        // 调用updateConfig()会导致重复创建组件，造成重复模型问题
+        // crtShell.updateConfig();
       }
     }
   });

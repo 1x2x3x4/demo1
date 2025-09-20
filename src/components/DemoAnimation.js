@@ -991,6 +991,9 @@ export class DemoAnimation {
     // 恢复电子束参数
     CONFIG.beam.intensity = this.originalParams.beam.intensity;
     
+    // 注意：不在这里重置爆炸效果，因为演示结束时已经通过explodeBtn.click()处理了
+    // 避免重复操作导致状态不一致
+    
     // 更新控制器
     if (this.controllers.onDeflectionChange) {
       this.controllers.onDeflectionChange(CONFIG.deflection);
@@ -1004,6 +1007,7 @@ export class DemoAnimation {
       this.controllers.onBeamChange(CONFIG.beam);
     }
   }
+  
   
   /**
    * 清除所有粒子
