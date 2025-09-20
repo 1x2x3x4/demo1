@@ -5,6 +5,7 @@ import { SuperellipseTransition } from './SuperellipseTransition.js';
 import { Cylinder2ExplodeEffect } from './Cylinder2ExplodeEffect.js';
 import { RotationCurveExplodeEffect } from './RotationCurveExplodeEffect.js';
 import { SuperellipseExplodeEffect } from './SuperellipseExplodeEffect.js';
+import { unifiedComponentMaterial } from '../materials/UnifiedComponentMaterial.js';
 
 /**
  * CRT正方形透明外壳组件
@@ -176,73 +177,71 @@ export class CRTShell {
    * @returns {THREE.BufferGeometry} 几何体
    */
   createOpenCylinderGeometry(radius, height, radialSegments = 32) {
-    const geometry = new THREE.BufferGeometry();
+    // 使用Three.js标准圆柱体几何体作为基础，确保法向量和光照计算正确
+    // 注意：openEnded设为false，这样两端都有封闭面，然后我们手动移除右端面
+    const baseGeometry = new THREE.CylinderGeometry(radius, radius, height, radialSegments, 1, false);
     
+    // 旋转90度使圆柱体沿X轴方向
+    baseGeometry.rotateZ(Math.PI / 2);
+    
+    // 获取几何体属性
+    const positions = baseGeometry.getAttribute('position');
+    const normals = baseGeometry.getAttribute('normal');
+    const uvs = baseGeometry.getAttribute('uv');
+    const indices = baseGeometry.getIndex();
+    
+    // 创建新的几何体，只保留侧面和左端面
+    const newGeometry = new THREE.BufferGeometry();
+    
+    // 复制侧面顶点（Three.js圆柱体的侧面已经有正确的法向量）
+    const newPositions = [];
+    const newNormals = [];
+    const newUvs = [];
+    const newIndices = [];
+    
+    const posArray = positions.array;
+    const normArray = normals.array;
+    const uvArray = uvs.array;
+    const indexArray = indices.array;
+    
+    // 复制所有顶点和法向量（Three.js已经计算好了）
+    for (let i = 0; i < posArray.length; i += 3) {
+      newPositions.push(posArray[i], posArray[i + 1], posArray[i + 2]);
+      newNormals.push(normArray[i], normArray[i + 1], normArray[i + 2]);
+    }
+    
+    for (let i = 0; i < uvArray.length; i += 2) {
+      newUvs.push(uvArray[i], uvArray[i + 1]);
+    }
+    
+    // 过滤索引，只保留侧面和左端面，去掉右端面
     const halfHeight = height / 2;
-    const vertices = [];
-    const normals = [];
-    const uvs = [];
-    const indices = [];
-    
-    // 生成圆柱体侧面顶点（沿X轴方向）
-    for (let i = 0; i <= radialSegments; i++) {
-      const angle = (i / radialSegments) * Math.PI * 2;
-      const y = Math.cos(angle) * radius;
-      const z = Math.sin(angle) * radius;
+    for (let i = 0; i < indexArray.length; i += 3) {
+      const i1 = indexArray[i] * 3;
+      const i2 = indexArray[i + 1] * 3;
+      const i3 = indexArray[i + 2] * 3;
       
-      // 左端顶点
-      vertices.push(-halfHeight, y, z);
-      normals.push(0, y / radius, z / radius); // 径向法向量
-      uvs.push(i / radialSegments, 0);
+      // 检查三角形是否在右端面（X > halfHeight - 0.01）
+      const x1 = posArray[i1];
+      const x2 = posArray[i2];
+      const x3 = posArray[i3];
       
-      // 右端顶点
-      vertices.push(halfHeight, y, z);
-      normals.push(0, y / radius, z / radius); // 径向法向量
-      uvs.push(i / radialSegments, 1);
+      // 如果三角形不在右端面，则保留
+      if (!(x1 > halfHeight - 0.01 && x2 > halfHeight - 0.01 && x3 > halfHeight - 0.01)) {
+        newIndices.push(indexArray[i], indexArray[i + 1], indexArray[i + 2]);
+      }
     }
     
-    // 生成圆柱体侧面索引
-    for (let i = 0; i < radialSegments; i++) {
-      const left1 = i * 2;
-      const right1 = i * 2 + 1;
-      const left2 = (i + 1) * 2;
-      const right2 = (i + 1) * 2 + 1;
-      
-      // 每个面片由两个三角形组成
-      indices.push(left1, right1, left2);
-      indices.push(right1, right2, left2);
-    }
+    // 设置几何体属性
+    newGeometry.setAttribute('position', new THREE.Float32BufferAttribute(newPositions, 3));
+    newGeometry.setAttribute('normal', new THREE.Float32BufferAttribute(newNormals, 3));
+    newGeometry.setAttribute('uv', new THREE.Float32BufferAttribute(newUvs, 2));
+    newGeometry.setIndex(newIndices);
     
-    // 只添加左端圆形面（X轴负方向），跳过右端圆形面
-    const centerLeftIndex = vertices.length / 3;
-    vertices.push(-halfHeight, 0, 0); // 左端中心点
-    normals.push(-1, 0, 0);
-    uvs.push(0.5, 0.5);
+    // 重新计算法向量以确保光照正确
+    newGeometry.computeVertexNormals();
     
-    // 生成左端圆形面的顶点和索引
-    for (let i = 0; i < radialSegments; i++) {
-      const angle = (i / radialSegments) * Math.PI * 2;
-      const y = Math.cos(angle) * radius;
-      const z = Math.sin(angle) * radius;
-      
-      vertices.push(-halfHeight, y, z);
-      normals.push(-1, 0, 0);
-      uvs.push((y / radius + 1) * 0.5, (z / radius + 1) * 0.5);
-      
-      // 连接到中心点的三角形
-      const currentIndex = centerLeftIndex + 1 + i;
-      const nextIndex = centerLeftIndex + 1 + ((i + 1) % radialSegments);
-      indices.push(centerLeftIndex, currentIndex, nextIndex);
-    }
-    
-    // 注意：我们故意不添加右端圆形面，以实现开放式设计
-    
-    geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
-    geometry.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
-    geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
-    geometry.setIndex(indices);
-    
-    return geometry;
+    return newGeometry;
   }
 
   /**
@@ -251,14 +250,8 @@ export class CRTShell {
   createCylinder1() {
     const config = CONFIG.shell.cylinder1;
     
-    // 创建第一个圆柱体的独立材质
-    this.cylinder1Material = new THREE.MeshPhongMaterial({
-      color: parseInt(config.color),
-      transparent: true,
-      opacity: config.opacity,
-      side: THREE.DoubleSide,
-      depthWrite: false
-    });
+    // 使用统一组件材质管理器获取标准材质，确保颜色一致性
+    this.cylinder1Material = unifiedComponentMaterial.getMaterial('standard');
     
     // 创建圆柱体几何体（使用独立的半径参数）
     const cylinder1Geometry = new THREE.CylinderGeometry(config.radius, config.radius, config.height, 32);
@@ -284,16 +277,8 @@ export class CRTShell {
   createCylinder2() {
     const config = CONFIG.shell.cylinder2;
     
-    // 使用统一组件材质以确保颜色一致性
-    this.cylinder2Material = new THREE.MeshStandardMaterial({
-      color: parseInt(config.color),
-      transparent: true,
-      opacity: config.opacity,
-      side: THREE.DoubleSide,
-      depthWrite: false,
-      metalness: 0.6,
-      roughness: 0.3
-    });
+    // 使用统一组件材质管理器获取标准材质，确保颜色一致性
+    this.cylinder2Material = unifiedComponentMaterial.getMaterial('standard');
     
     // 创建开放式圆柱体几何体（去掉右侧圆形面）
     const cylinder2Geometry = this.createOpenCylinderGeometry(config.radius, config.height, 32);

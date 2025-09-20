@@ -52,7 +52,7 @@
       "cylinder2": {
         "visible": true,
         "radius": 1,
-        "height": 2,
+        "height": 1.8,
         "position": { "x": -4.5, "y": 0, "z": 0 },
         "rotation": { "x": 0, "y": 0, "z": 0 },
         "color": "0xF0F0F0",

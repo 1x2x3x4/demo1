@@ -24,14 +24,18 @@ export class ElectronBeam {
     this.beamMaterial = new THREE.LineBasicMaterial({
       color: CONFIG.beam.color,
       opacity: CONFIG.beam.intensity,
-      transparent: true
+      transparent: true,
+      depthTest: true,  // 启用深度测试，确保被外壳正确遮挡
+      depthWrite: false // 禁用深度写入，避免影响其他透明物体
     });
     
     // 轨迹材质（淡一些）
     this.traceMaterial = new THREE.LineBasicMaterial({
       color: CONFIG.beam.color,
       opacity: CONFIG.electronBeam.trace.opacity,
-      transparent: true
+      transparent: true,
+      depthTest: true,  // 启用深度测试，确保被外壳正确遮挡
+      depthWrite: false // 禁用深度写入
     });
     
     // 初始化电子束
@@ -70,7 +74,7 @@ export class ElectronBeam {
       opacity: CONFIG.beam.intensity,
       transparent: true,
       linewidth: 3, // 增加线宽
-      depthTest: false, // 禁用深度测试，确保电子束总是可见
+      depthTest: true,  // 启用深度测试，确保被外壳正确遮挡
       depthWrite: false // 禁用深度写入
     });
     
@@ -80,7 +84,7 @@ export class ElectronBeam {
       opacity: CONFIG.beam.intensity * 0.3,
       transparent: true,
       linewidth: 8, // 更宽的发光效果
-      depthTest: false, // 禁用深度测试
+      depthTest: true,  // 启用深度测试，确保被外壳正确遮挡
       depthWrite: false // 禁用深度写入
     });
     
@@ -89,7 +93,7 @@ export class ElectronBeam {
       color: CONFIG.beam.color,
       opacity: CONFIG.electronBeam.trace.opacity,
       transparent: true,
-      depthTest: false, // 禁用深度测试，确保轨迹可见
+      depthTest: true,  // 启用深度测试，确保被外壳正确遮挡
       depthWrite: false // 禁用深度写入
     });
   }
@@ -316,7 +320,7 @@ export class ElectronBeam {
           color: CONFIG.beam.color,
           opacity: opacity,
           transparent: true,
-          depthTest: false, // 禁用深度测试，确保轨迹可见
+          depthTest: true,  // 启用深度测试，确保被外壳正确遮挡
           depthWrite: false // 禁用深度写入
         });
         

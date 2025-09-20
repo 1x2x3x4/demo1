@@ -17,11 +17,11 @@ export class UnifiedComponentMaterial {
       color: 0xF0F0F0,        // 银白色金属色
       metalness: 0.6,         // 金属度
       roughness: 0.3,         // 粗糙度
-      opacity: 0.7,           // 透明度
+      opacity: 1.0,           // 透明度 - 修改为完全不透明
       envMapIntensity: 1.0,   // 环境贴图强度
       side: THREE.DoubleSide, // 双面渲染
-      depthWrite: false,      // 关闭深度写入（透明物体）
-      transparent: true       // 启用透明
+      depthWrite: true,       // 启用深度写入（不透明物体）
+      transparent: false      // 禁用透明
     };
   }
 
@@ -144,7 +144,9 @@ export class UnifiedComponentMaterial {
   createExplodedMaterial() {
     const materialProps = {
       ...this.unifiedConfig,
-      opacity: 0.6  // 爆炸状态时更透明
+      opacity: 1.0,         // 爆炸材质也保持不透明
+      transparent: false,   // 禁用透明
+      depthWrite: true      // 启用深度写入
     };
 
     // 添加贴图（如果有）
@@ -177,7 +179,9 @@ export class UnifiedComponentMaterial {
   createTransitionMaterial() {
     const materialProps = {
       ...this.unifiedConfig,
-      opacity: 0.8  // 过渡材质稍微不透明一些
+      opacity: 1.0,         // 过渡材质也保持不透明
+      transparent: false,   // 禁用透明
+      depthWrite: true      // 启用深度写入
     };
 
     // 添加贴图（如果有）
@@ -217,14 +221,18 @@ export class UnifiedComponentMaterial {
     // 爆炸材质
     const explodedMaterial = new THREE.MeshStandardMaterial({
       ...this.unifiedConfig,
-      opacity: 0.6
+      opacity: 1.0,
+      transparent: false,
+      depthWrite: true
     });
     this.materialCache.set('exploded', explodedMaterial);
     
     // 过渡材质
     const transitionMaterial = new THREE.MeshStandardMaterial({
       ...this.unifiedConfig,
-      opacity: 0.8
+      opacity: 1.0,
+      transparent: false,
+      depthWrite: true
     });
     this.materialCache.set('transition', transitionMaterial);
   }

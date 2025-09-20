@@ -49,7 +49,7 @@ export class DemoAnimation {
       color: CONFIG.beam.color,
       transparent: true,
       opacity: CONFIG.demoAnimation.electronParticle.opacity,
-      depthTest: false,  // 禁用深度测试，确保粒子总是可见
+      depthTest: true,   // 启用深度测试，确保被外壳正确遮挡
       depthWrite: false, // 禁用深度写入，避免影响其他透明物体
       blending: THREE.AdditiveBlending // 使用加法混合，增强发光效果
     });
@@ -691,7 +691,7 @@ export class DemoAnimation {
       const particleMat = this.particleMaterial.clone();
       
       // 确保粒子材质具有最佳可见性
-      particleMat.depthTest = false;
+      particleMat.depthTest = true;  // 启用深度测试，确保被外壳正确遮挡
       particleMat.depthWrite = false;
       particleMat.blending = THREE.AdditiveBlending;
       
