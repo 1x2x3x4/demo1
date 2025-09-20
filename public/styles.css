@@ -4,6 +4,13 @@ body {
   font-family: 'Arial', sans-serif;
   background: #f0f0f0;
   overflow: hidden; /* 外部页禁止页面级滚动，由内部容器自行滚动 */
+  /* 高DPI屏幕适配 */
+  -webkit-text-size-adjust: 100%;
+  -ms-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  /* 确保在不同缩放比例下的清晰度 */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 /* 布局样式 */
@@ -351,6 +358,12 @@ canvas {
   width: 100%;
   height: 100%;
   display: block;
+  /* 高DPI屏幕适配 */
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+  /* 确保Canvas在不同DPI下的一致性 */
+  max-width: 100%;
+  max-height: 100%;
 }
 
 /* 触发控制样式 */
@@ -1090,6 +1103,60 @@ input:disabled {
 .slider-row td {
   padding: 10px 5px;
   text-align: center;
+}
+
+/* 高DPI和缩放适配 - 确保跨分辨率一致性 */
+@media screen and (-webkit-min-device-pixel-ratio: 1.25), 
+       screen and (min-resolution: 120dpi) {
+  /* 在高DPI屏幕上保持界面尺寸一致 */
+  html {
+    zoom: 1;
+  }
+  
+  /* 确保Canvas在高DPI下的清晰度 */
+  canvas {
+    image-rendering: pixelated;
+    image-rendering: -moz-crisp-edges;
+    image-rendering: crisp-edges;
+  }
+  
+  /* 调整字体大小以保持一致性 */
+  body {
+    font-size: 14px;
+  }
+  
+  /* 调整按钮和控件尺寸 */
+  button {
+    padding: 6px 10px;
+    font-size: 13px;
+  }
+  
+  input[type="number"] {
+    font-size: 13px;
+    padding: 3px;
+  }
+}
+
+/* 针对2560×1440分辨率的优化 */
+@media screen and (min-width: 2560px) and (min-height: 1440px) {
+  body {
+    font-size: 16px;
+  }
+  
+  button {
+    padding: 8px 14px;
+    font-size: 15px;
+  }
+  
+  input[type="number"] {
+    font-size: 15px;
+    padding: 5px;
+  }
+  
+  .exp-steps button {
+    font-size: 16px;
+    padding: 8px 16px;
+  }
 }
 
 /* 控制面板响应式布局 */

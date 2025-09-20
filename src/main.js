@@ -152,7 +152,12 @@ function initCamera() {
 // ===== 渲染器初始化 =====
 function initRenderer() {
   renderer = new THREE.WebGLRenderer({ antialias: true }); // 创建渲染器
+  
+  // 高DPI屏幕适配
+  const devicePixelRatio = window.devicePixelRatio || 1;
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2)); // 限制最大DPI比率为2
   renderer.setSize(window.innerWidth, window.innerHeight); // 设置渲染器大小
+  
   document.body.appendChild(renderer.domElement); // 将渲染器添加到文档中
 }
 
@@ -589,18 +594,26 @@ function updateScreenAndGlowPoint() {
 
 // ===== 窗口大小调整 =====
 function onWindowResize() {
-  camera.aspect = window.innerWidth / window.innerHeight;
+  // 获取实际显示尺寸，考虑DPI缩放
+  const devicePixelRatio = window.devicePixelRatio || 1;
+  const width = window.innerWidth;
+  const height = window.innerHeight;
+  
+  camera.aspect = width / height;
   camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
+  
+  // 设置渲染器尺寸，考虑高DPI
+  renderer.setSize(width, height);
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2)); // 限制最大DPI比率为2
   
   // 更新标签系统
   if (labelSystem) {
-    labelSystem.resize(window.innerWidth, window.innerHeight);
+    labelSystem.resize(width, height);
   }
   
   // 更新UI控制器
   if (uiController) {
-    uiController.resize(window.innerWidth, window.innerHeight);
+    uiController.resize(width, height);
   }
 }
 
