@@ -209,7 +209,11 @@ export class MaterialManager {
       emissive: new THREE.Color(CONFIG.screen.color),
       emissiveIntensity: CONFIG.screen.intensity,
       roughness: screenConfig.roughness,
-      side: THREE.DoubleSide
+      side: THREE.DoubleSide,
+      transparent: true,        // 启用透明度，允许粒子透过
+      opacity: 0.9,            // 设置轻微透明度
+      depthTest: true,         // 启用深度测试
+      depthWrite: false        // 禁用深度写入，允许后面的粒子显示
     });
   }
 

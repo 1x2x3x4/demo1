@@ -273,6 +273,7 @@ function initComponents() {
   screen = new THREE.Mesh(new THREE.PlaneGeometry(CONFIG.components.screen.width, CONFIG.components.screen.height), screenMat); // 创建荧光屏
   screen.position.set(CONFIG.components.screen.position.x, CONFIG.components.screen.position.y, CONFIG.components.screen.position.z); // 设置荧光屏位置
   screen.rotation.y = -Math.PI / 2; // 设置荧光屏旋转
+  screen.renderOrder = 1; // 设置渲染顺序，确保在电子粒子之前渲染
   scene.add(screen); // 将荧光屏添加到场景中
    
   
