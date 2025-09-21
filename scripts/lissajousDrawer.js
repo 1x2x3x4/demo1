@@ -137,7 +137,7 @@ export const LissajousDrawer = (function() {
     
     // 设置绘图样式
     ctx.beginPath();
-    ctx.strokeStyle = 'rgba(66, 185, 131, 0.9)';
+    ctx.strokeStyle = '#00FF00';
     ctx.lineWidth = 2.5;
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';

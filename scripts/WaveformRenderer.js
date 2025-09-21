@@ -125,6 +125,7 @@ export default class WaveformRenderer {
         text: OscilloscopeConstants.COLORS.TEXT,
         channel1: OscilloscopeConstants.COLORS.CHANNEL_1,
         channel2: OscilloscopeConstants.COLORS.CHANNEL_2,
+        overlay: '#00FF00',        // 同向叠加模式的波形颜色（绿色）
         trigger: '#FFEB3B'         // 触发线颜色
       },
       // 网格设置
@@ -216,9 +217,16 @@ export default class WaveformRenderer {
     const displayWidth = this.canvas.clientWidth || 800;
     const displayHeight = this.canvas.clientHeight || 400;
     
-    // 设置Canvas的实际像素尺寸，保证清晰度
-    this.canvas.width = displayWidth;
-    this.canvas.height = displayHeight;
+    // 使用高DPI适配，解决模糊问题
+    const devicePixelRatio = window.devicePixelRatio || 1;
+    this.canvas.width = displayWidth * devicePixelRatio;
+    this.canvas.height = displayHeight * devicePixelRatio;
+    this.canvas.style.width = displayWidth + 'px';
+    this.canvas.style.height = displayHeight + 'px';
+    
+    // 缩放context以确保正确绘制
+    const ctx = this.canvas.getContext('2d');
+    ctx.scale(devicePixelRatio, devicePixelRatio);
     
     // 根据新尺寸重绘
     this.draw();

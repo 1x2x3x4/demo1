@@ -7,7 +7,8 @@ export const CONSTANTS = OscilloscopeConstants;
 
 export const CHANNEL_COLORS = {
   1: OscilloscopeConstants.COLORS.CHANNEL_1,
-  2: OscilloscopeConstants.COLORS.CHANNEL_2
+  2: OscilloscopeConstants.COLORS.CHANNEL_2,
+  OVERLAY: '#00FF00'  // 同向叠加模式的波形颜色（绿色）
 };
 
 export function drawGrid(ctx, options = {}) {
