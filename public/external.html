@@ -33,7 +33,7 @@
             <div class="channel-control">
               <div v-for="line in [1, 2]" :key="line" class="b1">
                 <button @click="toggleInput(line)">
-                  <span class="channel-color-block" :style="{ backgroundColor: line === 1 ? '#42B983CC' : '#FF5722' }"></span>
+                  <span class="channel-color-block" :style="{ backgroundColor: line === 1 ? '#2196F3' : '#FF5722' }"></span>
                   通道 {{ line }}
                   <span class="indicator" :class="{ on: inputActive[line] }"></span>
                 </button>
@@ -82,7 +82,7 @@
                   <div class="channel-control">
                     <div v-for="line in [1, 2]" :key="line" class="b1">
                       <button @click="toggleInput(line)">
-                        <span class="channel-color-block" :style="{ backgroundColor: line === 1 ? '#42B983CC' : '#FF5722' }"></span>
+                        <span class="channel-color-block" :style="{ backgroundColor: line === 1 ? '#2196F3' : '#FF5722' }"></span>
                         通道 {{ line }}
                         <span class="indicator" :class="{ on: inputActive[line] }"></span>
                       </button>
