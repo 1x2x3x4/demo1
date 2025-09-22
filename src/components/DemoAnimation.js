@@ -88,7 +88,7 @@ export class DemoAnimation {
     this.animationSteps.push({
       title: '电子枪发射电子',
       description: '电子枪加热阴极，释放电子并加速形成电子束。',
-      duration: 4000,
+      duration: 8000,
       setup: () => {
         // 聚焦到电子枪
         const focusPromise = this.focusOnComponent('gun');
@@ -109,7 +109,7 @@ export class DemoAnimation {
     this.animationSteps.push({
       title: '垂直偏转板',
       description: '垂直偏转板通过电压控制电子束在垂直方向上的偏转。',
-      duration: 5000,
+      duration: 8000,
       setup: () => {
         // 聚焦到垂直偏转板
         const focusPromise = this.focusOnComponent('v1');
@@ -134,7 +134,7 @@ export class DemoAnimation {
     this.animationSteps.push({
       title: '水平偏转板',
       description: '水平偏转板通过电压控制电子束在水平方向上的偏转。',
-      duration: 5000,
+      duration: 8000,
       setup: () => {
         // 聚焦到水平偏转板
         const focusPromise = this.focusOnComponent('h1');
