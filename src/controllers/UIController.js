@@ -1,4 +1,3 @@
-import * as dat from 'dat.gui';
 import { CONFIG } from '../configLoader';
 
 /**

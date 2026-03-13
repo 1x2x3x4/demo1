@@ -10,6 +10,8 @@ export class MaterialManager {
     this.textureLoader = new THREE.TextureLoader();
     this.materials = {};
     this.textures = {};
+    this.texturePromises = new Map();
+    this.texturesByPath = new Map();
   }
 
   /**
@@ -96,7 +98,26 @@ export class MaterialManager {
    * @returns {Promise} 贴图加载Promise
    */
   loadTexture(name, path) {
-    return new Promise((resolve, reject) => {
+    if (this.textures[name]) {
+      return Promise.resolve(this.textures[name]);
+    }
+
+    if (this.texturesByPath.has(path)) {
+      const sharedTexture = this.texturesByPath.get(path);
+      this.textures[name] = sharedTexture;
+      console.log(`复用已加载贴图: ${name} (${path})`);
+      return Promise.resolve(sharedTexture);
+    }
+
+    if (this.texturePromises.has(path)) {
+      return this.texturePromises.get(path).then((texture) => {
+        this.textures[name] = texture;
+        console.log(`复用贴图加载任务: ${name} (${path})`);
+        return texture;
+      });
+    }
+
+    const loadPromise = new Promise((resolve, reject) => {
       this.textureLoader.load(
         path,
         (texture) => {
@@ -104,8 +125,7 @@ export class MaterialManager {
           texture.wrapS = THREE.RepeatWrapping;
           texture.wrapT = THREE.RepeatWrapping;
           texture.flipY = false;
-          
-          this.textures[name] = texture;
+
           console.log(`贴图加载成功: ${name} (${path})`);
           resolve(texture);
         },
@@ -118,6 +138,18 @@ export class MaterialManager {
         }
       );
     });
+
+    this.texturePromises.set(path, loadPromise);
+
+    return loadPromise
+      .then((texture) => {
+        this.texturesByPath.set(path, texture);
+        this.textures[name] = texture;
+        return texture;
+      })
+      .finally(() => {
+        this.texturePromises.delete(path);
+      });
   }
 
   /**
@@ -259,6 +291,10 @@ export class MaterialManager {
    */
   getMaterial(name) {
     return this.materials[name];
+  }
+
+  getTextures() {
+    return { ...this.textures };
   }
 
   /**

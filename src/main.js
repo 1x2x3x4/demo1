@@ -30,9 +30,16 @@ let guiController, uiController;  // GUI控制器、UI控制器
 let labelSystem, explodedView, demoAnimation;  // 标签系统、分解视图、演示动画
 let crtShell;  // CRT外壳
 let materialManager;  // 材质管理器
+let deferredUiInitialized = false; // 首屏后延迟初始化的 UI 模块状态
+let loadingScreen; // 内部页加载动画
 
 // 创建 TWEEN Group 管理动画（解决 TWEEN.update() 弃用问题）
 export const tweenGroup = new TWEEN.Group();
+
+function getLoadingScreen() {
+  loadingScreen = window.__internalLoadingScreen || loadingScreen;
+  return loadingScreen;
+}
 
 // ===== 热重载支持 =====
 if (module.hot) {
@@ -97,25 +104,26 @@ function parseColor(color) {
 
 // ===== 初始化函数 =====
 async function init() {
+  const appStart = performance.now();
+  loadingScreen = getLoadingScreen();
   console.log('初始化应用...');
+  if (getLoadingScreen()) {
+    loadingScreen.setStatus('正在初始化三维场景...');
+  }
   initScene(); // 初始化场景
   initCamera(); // 初始化相机
   initRenderer(); // 初始化渲染器
   initControls(); // 初始化控制器
   initLights(); // 初始化光源
   initGrid(); // 初始化网格
+  if (getLoadingScreen()) {
+    loadingScreen.setStatus('正在同步材质与贴图...');
+  }
   await initMaterials(); // 初始化材质（异步）
+  if (getLoadingScreen()) {
+    loadingScreen.setStatus('正在构建内部组件...');
+  }
   initComponents(); // 初始化组件
-  console.log('初始化标签系统...');
-  initLabelSystem(); // 初始化标签系统
-  console.log('初始化分解视图...');
-  initExplodedView(); // 初始化分解视图
-  console.log('初始化GUI...');
-  initGui(); // 初始化GUI（需要在演示动画之前初始化）
-  console.log('初始化演示动画...');
-  initDemoAnimation(); // 初始化演示动画
-  console.log('初始化UI控制器...');
-  initUIController(); // 初始化UI控制器
   
   // 初始化波形显示
   updateScreenWaveform();
@@ -128,7 +136,12 @@ async function init() {
   
   // 窗口自适应
   window.addEventListener('resize', onWindowResize);   // 窗口大小调整事件监听
-  
+
+  console.log(`[internal:perf] core scene ready in ${(performance.now() - appStart).toFixed(1)}ms`);
+  if (getLoadingScreen()) {
+    loadingScreen.complete('内部视图已就绪');
+  }
+  scheduleDeferredUiInitialization();
   console.log('应用初始化完成');
 }
 
@@ -207,14 +220,103 @@ function initGrid() {
 
 // ===== 材质初始化 =====
 async function initMaterials() {
+  const materialsStart = performance.now();
   console.log('初始化材质管理器...');
   materialManager = new MaterialManager();
   await materialManager.initializeMaterials();
   
   console.log('初始化统一组件材质管理器...');
-  await unifiedComponentMaterial.initialize();
+  await unifiedComponentMaterial.initialize({
+    sharedTextures: materialManager.getTextures(),
+  });
   
-  console.log('材质初始化完成');
+  console.log(`[internal:perf] materials ready in ${(performance.now() - materialsStart).toFixed(1)}ms`);
+}
+
+function scheduleDeferred(callback) {
+  if (typeof window !== 'undefined' && typeof window.requestIdleCallback === 'function') {
+    window.requestIdleCallback(() => callback());
+    return;
+  }
+
+  window.setTimeout(callback, 0);
+}
+
+function scheduleDeferredUiInitialization() {
+  if (deferredUiInitialized) {
+    return;
+  }
+
+  deferredUiInitialized = true;
+  const deferredTasks = [
+    {
+      name: 'label system',
+      run: () => {
+        console.log('初始化标签系统...');
+        initLabelSystem();
+      },
+    },
+    {
+      name: 'exploded view',
+      run: () => {
+        console.log('初始化分解视图...');
+        initExplodedView();
+      },
+    },
+    {
+      name: 'gui',
+      run: () => {
+        console.log('初始化GUI...');
+        initGui();
+      },
+    },
+    {
+      name: 'demo animation',
+      run: () => {
+        console.log('初始化演示动画...');
+        initDemoAnimation();
+      },
+    },
+  {
+      name: 'ui controller',
+      run: () => {
+        console.log('初始化UI控制器...');
+        initUIController();
+      },
+    },
+    {
+      name: 'examples',
+      run: () => {
+        console.log('初始化演示示例...');
+        initDeferredExamples();
+      },
+    },
+  ];
+
+  const deferredStart = performance.now();
+
+  const runTask = (index) => {
+    if (index >= deferredTasks.length) {
+      console.log(`[internal:perf] deferred ui ready in ${(performance.now() - deferredStart).toFixed(1)}ms`);
+      return;
+    }
+
+    scheduleDeferred(() => {
+      const task = deferredTasks[index];
+      const taskStart = performance.now();
+      task.run();
+      console.log(
+        `[internal:perf] deferred ${task.name} ready in ${(performance.now() - taskStart).toFixed(1)}ms`
+      );
+      runTask(index + 1);
+    });
+  };
+
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      runTask(0);
+    });
+  });
 }
 
 // ===== 组件初始化 =====
@@ -297,10 +399,10 @@ function initComponents() {
   crtShell = new CRTShell();
   scene.add(crtShell.getShell());
   
-  // 初始化连接位置演示（使其在全局可用）
+}
+
+function initDeferredExamples() {
   window.connectionDemo = new ConnectionPositionDemo(crtShell);
-  
-  // 初始化超椭圆形状渐变演示（使其在全局可用）
   window.transitionDemo = new SuperellipseTransitionDemo(crtShell);
 }
 
@@ -667,6 +769,9 @@ function animate(timestamp) {
 // ===== 启动应用 =====
 init().catch(error => {
   console.error('应用初始化失败:', error);
+  if (getLoadingScreen()) {
+    loadingScreen.fail('内部视图加载失败，请刷新重试');
+  }
 });
 
 // ===== 初始化右上角切换控件（内部页） =====

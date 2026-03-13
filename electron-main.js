@@ -1,12 +1,47 @@
 const { app, BrowserWindow } = require('electron');
+const fs = require('fs');
 const path = require('path');
 
 let mainWindow;
 
+function resolveStartTarget() {
+  if (process.env.NODE_ENV === 'development') {
+    return { type: 'url', value: 'http://localhost:8081' };
+  }
+
+  if (app.isPackaged) {
+    return {
+      type: 'file',
+      value: path.join(process.resourcesPath, 'docs', 'index.html'),
+    };
+  }
+
+  return {
+    type: 'file',
+    value: path.join(__dirname, 'docs', 'index.html'),
+  };
+}
+
+function resolveWindowIcon() {
+  const candidates = app.isPackaged
+    ? [
+        path.join(process.resourcesPath, 'assets', 'icons', 'icon.png'),
+        path.join(process.resourcesPath, 'icon.png'),
+      ]
+    : [
+        path.join(__dirname, 'assets', 'icons', 'icon.png'),
+        path.join(__dirname, 'icon.png'),
+      ];
+
+  return candidates.find((candidate) => fs.existsSync(candidate));
+}
+
 function createWindow() {
-  console.log('🚀 启动示波器仿真系统...');
-  
-  mainWindow = new BrowserWindow({
+  console.log('Starting Oscilloscope Simulator...');
+
+  const startTarget = resolveStartTarget();
+  const iconPath = resolveWindowIcon();
+  const windowOptions = {
     width: 1400,
     height: 900,
     minWidth: 1200,
@@ -15,28 +50,33 @@ function createWindow() {
       nodeIntegration: false,
       contextIsolation: true,
       enableRemoteModule: false,
-      webSecurity: true
+      webSecurity: true,
     },
     show: false,
     title: '示波器仿真系统',
-    icon: path.join(__dirname, '../assets/icons/icon.png')
-  });
+  };
 
-  // 加载应用
-  if (process.env.NODE_ENV === 'development') {
-    const startUrl = 'http://localhost:8081';
-    console.log('🌐 开发模式，加载:', startUrl);
-    mainWindow.loadURL(startUrl);
+  if (iconPath) {
+    windowOptions.icon = iconPath;
+    console.log('Using window icon:', iconPath);
+  } else {
+    console.log('No window icon found, continuing without a custom icon.');
+  }
+
+  mainWindow = new BrowserWindow(windowOptions);
+
+  if (startTarget.type === 'url') {
+    console.log('Loading development URL:', startTarget.value);
+    mainWindow.loadURL(startTarget.value);
     mainWindow.webContents.openDevTools();
   } else {
-    const startUrl = path.join(__dirname, '../docs/index.html');
-    console.log('📂 生产模式，加载:', startUrl);
-    mainWindow.loadFile(startUrl);
+    console.log('Loading local file:', startTarget.value);
+    mainWindow.loadFile(startTarget.value);
   }
 
   mainWindow.once('ready-to-show', () => {
     mainWindow.show();
-    console.log('✅ 应用启动成功！');
+    console.log('Application started successfully.');
   });
 
   mainWindow.on('closed', () => {

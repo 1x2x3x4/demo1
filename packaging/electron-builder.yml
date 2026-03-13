@@ -4,7 +4,6 @@ productName: 示波器仿真系统
 
 directories:
   output: dist
-  buildResources: assets/icons
 
 files:
   - electron-main.js
@@ -32,7 +31,6 @@ win:
     - target: portable
       arch:
         - x64
-  icon: icon.ico
   requestedExecutionLevel: asInvoker
   # 确保便携版包含图标
   artifactName: "${productName}-${version}-portable.${ext}"
@@ -48,7 +46,6 @@ mac:
       arch:
         - x64
         - arm64
-  icon: icon.icns
   category: public.app-category.education
 
 # Linux配置
@@ -60,10 +57,8 @@ linux:
     - target: deb
       arch:
         - x64
-  icon: icon.png
   category: Education
 
 # DMG配置
 dmg:
   title: 示波器仿真系统
-  icon: icon.icns

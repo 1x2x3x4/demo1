@@ -70,6 +70,7 @@ module.exports = {
           to: 'textures',
           // 可以添加图片压缩插件处理
         },
+        { from: path.resolve(__dirname, 'public/internal-loading-screen.js'), to: 'internal-loading-screen.js' },
       ],
     }),
   ],

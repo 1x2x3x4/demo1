@@ -29,12 +29,18 @@ export class UnifiedComponentMaterial {
    * 初始化统一材质系统
    * @returns {Promise} 返回Promise，在初始化完成后解析
    */
-  async initialize() {
+  async initialize(options = {}) {
     console.log('🎨 正在初始化统一组件材质系统...');
-    
+    const { sharedTextures = null } = options;
+
     try {
-      // 加载金属贴图
-      await this.loadMetalTextures();
+      if (sharedTextures && Object.keys(sharedTextures).length > 0) {
+        this.textures = { ...sharedTextures };
+        console.log('📦 统一组件材质系统复用共享贴图缓存');
+      } else {
+        // 加载金属贴图
+        await this.loadMetalTextures();
+      }
       
       // 预创建常用材质
       this.createStandardMaterial();

@@ -4,71 +4,69 @@ const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
-console.log('🚀 初始化示波器仿真系统项目...');
+const projectRoot = path.join(__dirname, '..');
 
 function runCommand(command, description) {
-  console.log(`\n📦 ${description}...`);
+  console.log(`\n[setup] ${description}...`);
   try {
-    execSync(command, { stdio: 'inherit', cwd: path.join(__dirname, '..') });
-    console.log(`✅ ${description} 完成`);
+    execSync(command, { stdio: 'inherit', cwd: projectRoot });
+    console.log(`[setup] ${description} completed.`);
   } catch (error) {
-    console.error(`❌ ${description} 失败:`, error.message);
+    console.error(`[setup] ${description} failed:`, error.message);
     process.exit(1);
   }
 }
 
-// 检查Node.js版本
-const nodeVersion = process.version;
-const majorVersion = parseInt(nodeVersion.slice(1).split('.')[0]);
+function ensureNodeVersion() {
+  const majorVersion = Number(process.versions.node.split('.')[0]);
+  if (majorVersion < 16) {
+    console.error('[setup] Node.js 16 or newer is required.');
+    console.error(`[setup] Current version: ${process.version}`);
+    process.exit(1);
+  }
 
-if (majorVersion < 16) {
-  console.error('❌ 需要 Node.js 16 或更高版本');
-  console.log('当前版本:', nodeVersion);
-  console.log('请访问 https://nodejs.org 下载最新版本');
-  process.exit(1);
+  console.log(`[setup] Node.js version check passed: ${process.version}`);
 }
 
-console.log('✅ Node.js版本检查通过:', nodeVersion);
+function ensureDirectories() {
+  const directories = ['dist', path.join('assets', 'icons')];
 
-// 安装依赖
-runCommand('npm install', '安装项目依赖');
-
-// 创建必要的目录
-const directories = ['dist', 'assets'];
-directories.forEach(dir => {
-  const dirPath = path.join(__dirname, '..', dir);
-  if (!fs.existsSync(dirPath)) {
-    fs.mkdirSync(dirPath, { recursive: true });
-    console.log(`✅ 创建目录: ${dir}/`);
+  for (const directory of directories) {
+    const fullPath = path.join(projectRoot, directory);
+    if (!fs.existsSync(fullPath)) {
+      fs.mkdirSync(fullPath, { recursive: true });
+      console.log(`[setup] Created directory: ${directory}`);
+    }
   }
-});
+}
 
-// 检查是否存在图标文件，如果不存在则创建占位符
-const iconFiles = [
-  { name: 'icon.ico', desc: 'Windows图标' },
-  { name: 'icon.icns', desc: 'macOS图标' },
-  { name: 'icon.png', desc: 'Linux图标' }
-];
+function reportOptionalIcons() {
+  const iconFiles = [
+    { name: 'icon.ico', desc: 'Windows icon' },
+    { name: 'icon.icns', desc: 'macOS icon' },
+    { name: 'icon.png', desc: 'Linux icon' },
+  ];
 
-iconFiles.forEach(icon => {
-  const iconPath = path.join(__dirname, '..', 'assets', icon.name);
-  if (!fs.existsSync(iconPath)) {
-    console.log(`⚠️  缺少${icon.desc}: assets/${icon.name}`);
-    console.log(`   请添加对应的图标文件以获得更好的用户体验`);
+  for (const icon of iconFiles) {
+    const iconPath = path.join(projectRoot, 'assets', 'icons', icon.name);
+    if (!fs.existsSync(iconPath)) {
+      console.log(`[setup] Optional custom ${icon.desc}: assets/icons/${icon.name}`);
+    }
   }
-});
+}
 
-console.log('\n🎉 项目初始化完成！');
-console.log('\n📚 可用命令:');
-console.log('  npm run dev              - 启动Web开发服务器');
-console.log('  npm run electron:dev     - 启动Electron开发环境');
-console.log('  npm run build            - 构建Web应用');
-console.log('  npm run electron:build   - 构建当前平台的桌面应用');
-console.log('  npm run electron:build-win    - 构建Windows版本');
-console.log('  npm run electron:build-mac    - 构建macOS版本');
-console.log('  npm run electron:build-linux  - 构建Linux版本');
-console.log('  npm run electron:build-all    - 构建所有平台版本');
-console.log('  node scripts/build.js [platform] - 使用构建脚本');
-console.log('\n💡 快速开始:');
-console.log('  npm run electron:dev     - 立即体验桌面应用');
-console.log('  node scripts/build.js    - 构建当前平台的可执行文件');
+function printNextSteps() {
+  console.log('\n[setup] Available commands:');
+  console.log('  npm run dev');
+  console.log('  npm run electron:dev');
+  console.log('  npm run build');
+  console.log('  npm run smoke:electron');
+  console.log('  npm run dist:win');
+}
+
+console.log('[setup] Initializing project...');
+ensureNodeVersion();
+runCommand('npm install', 'Installing project dependencies');
+ensureDirectories();
+reportOptionalIcons();
+printNextSteps();
