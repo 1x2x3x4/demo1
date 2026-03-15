@@ -14,6 +14,8 @@
 
 - [electron-main.js](C:/Users/ASUS/Desktop/demo1/packaging/electron-main.js): Electron 主进程代理入口
 - [build.js](C:/Users/ASUS/Desktop/demo1/packaging/build.js): 多平台构建脚本
+- [local-binary-server.js](C:/Users/ASUS/Desktop/demo1/packaging/local-binary-server.js): 本地 `winCodeSign` 镜像辅助脚本
+- [binaries/README.md](C:/Users/ASUS/Desktop/demo1/packaging/binaries/README.md): 本地打包资源放置说明
 - [install-electron.js](C:/Users/ASUS/Desktop/demo1/packaging/install-electron.js): 安装辅助脚本
 - [optimize-build.js](C:/Users/ASUS/Desktop/demo1/packaging/optimize-build.js): 构建优化脚本
 - [setup.js](C:/Users/ASUS/Desktop/demo1/packaging/setup.js): 初始化与目录准备

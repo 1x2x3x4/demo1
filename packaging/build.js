@@ -1,119 +1,194 @@
 #!/usr/bin/env node
 
-const { execSync } = require('child_process');
-const path = require('path');
+const { execSync, spawn } = require('child_process');
+const fs = require('fs');
 const os = require('os');
+const path = require('path');
 
-console.log('🚀 开始构建示波器仿真系统...');
+const ROOT_DIR = path.join(__dirname, '..');
+const LOCAL_CACHE_DIR = path.join(ROOT_DIR, '.eb-cache-local');
+const LOCAL_SERVER_SCRIPT = path.join(__dirname, 'local-binary-server.js');
+const LOCAL_WIN_CODESIGN_ARCHIVE = path.join(__dirname, 'binaries', 'winCodeSign-2.6.0.7z');
+const LOCAL_WIN_CODESIGN_DIR = 'winCodeSign-2.6.0';
 
-function runCommand(command, description) {
-  console.log(`\n📦 ${description}...`);
-  try {
-    execSync(command, { stdio: 'inherit', cwd: path.join(__dirname, '..') });
-    console.log(`✅ ${description} 完成`);
-  } catch (error) {
-    console.error(`❌ ${description} 失败:`, error.message);
-    process.exit(1);
-  }
+const args = process.argv.slice(2);
+const buildTarget = (args[0] || 'current').toLowerCase();
+const buildMode = (args[1] || process.env.WIN_CODESIGN_SOURCE || 'remote').toLowerCase();
+const validModes = new Set(['remote', 'local']);
+
+if (!validModes.has(buildMode)) {
+  console.error(`Unsupported build mode: ${buildMode}`);
+  process.exit(1);
 }
 
-// 获取命令行参数
-const args = process.argv.slice(2);
-const buildTarget = args[0] || 'current';
+console.log('Starting oscilloscope simulator packaging...');
+console.log(`Build target: ${buildTarget}`);
+console.log(`winCodeSign source: ${buildMode}`);
 
-// 根据目标进行构建
-function executeBuild() {
-  const currentPlatform = os.platform();
-  console.log(`\n🖥️  当前平台: ${currentPlatform}`);
-  
-  switch (buildTarget) {
+function runCommand(command, description, extraEnv = {}) {
+  console.log(`\n[run] ${description}`);
+  execSync(command, {
+    cwd: ROOT_DIR,
+    stdio: 'inherit',
+    env: {
+      ...process.env,
+      ...extraEnv,
+    },
+  });
+}
+
+function showBuildInfo(build) {
+  console.log(`\n[done] ${build.label}`);
+  console.log(`Output: dist/ (${build.artifact})`);
+}
+
+function getTargetBuilds(target, currentPlatform) {
+  const allByPlatform = {
+    win32: [
+      { flag: '--linux', label: 'Linux build', artifact: '.tar.gz', needsWinCodeSign: false },
+      { flag: '--win', label: 'Windows build', artifact: '.exe portable', needsWinCodeSign: true },
+    ],
+    darwin: [
+      { flag: '--mac', label: 'macOS build', artifact: '.dmg', needsWinCodeSign: false },
+      { flag: '--linux', label: 'Linux build', artifact: '.tar.gz', needsWinCodeSign: false },
+      { flag: '--win', label: 'Windows build', artifact: '.exe portable', needsWinCodeSign: true },
+    ],
+    linux: [
+      { flag: '--linux', label: 'Linux build', artifact: '.tar.gz', needsWinCodeSign: false },
+      { flag: '--win', label: 'Windows build', artifact: '.exe portable', needsWinCodeSign: true },
+    ],
+  };
+
+  switch (target) {
     case 'win':
     case 'windows':
-      console.log('\n🖥️  构建Windows版本...');
-      runCommand('electron-builder --win --publish=never', '构建Windows应用');
-      showBuildInfo('Windows', '.exe 便携版');
-      break;
-      
+      return [{ flag: '--win', label: 'Windows build', artifact: '.exe portable', needsWinCodeSign: true }];
     case 'mac':
     case 'macos':
-      console.log('\n🍎 构建macOS版本...');
-      runCommand('electron-builder --mac --publish=never', '构建macOS应用');
-      showBuildInfo('macOS', '.dmg 安装包');
-      break;
-      
+      return [{ flag: '--mac', label: 'macOS build', artifact: '.dmg', needsWinCodeSign: false }];
     case 'linux':
-      console.log('\n🐧 构建Linux版本...');
-      runCommand('electron-builder --linux --publish=never', '构建Linux应用');
-      showBuildInfo('Linux', '.tar.gz 压缩包');
-      break;
-      
+      return [{ flag: '--linux', label: 'Linux build', artifact: '.tar.gz', needsWinCodeSign: false }];
     case 'all':
-      console.log('\n🌍 构建所有支持的平台版本...');
-      buildAllSupportedPlatforms(currentPlatform);
-      break;
-      
+      return allByPlatform[currentPlatform] || allByPlatform.win32;
     case 'current':
     default:
-      console.log(`\n🖥️  构建当前平台版本 (${currentPlatform})...`);
-      runCommand('electron-builder --publish=never', '构建当前平台应用');
-      showBuildInfo('当前平台', '对应格式的安装包');
-      break;
+      if (currentPlatform === 'darwin') {
+        return [{ flag: '--mac', label: 'macOS build', artifact: '.dmg', needsWinCodeSign: false }];
+      }
+      if (currentPlatform === 'linux') {
+        return [{ flag: '--linux', label: 'Linux build', artifact: '.tar.gz', needsWinCodeSign: false }];
+      }
+      return [{ flag: '--win', label: 'Windows build', artifact: '.exe portable', needsWinCodeSign: true }];
   }
 }
 
-function showBuildInfo(platform, format) {
-  console.log(`\n✨ ${platform}版本构建完成！`);
-  console.log('📍 输出目录: dist/');
-  console.log(`📦 格式: ${format}`);
-}
-
-function buildAllSupportedPlatforms(currentPlatform) {
-  const supportedTargets = [];
-  const platformInfo = [];
-  
-  switch (currentPlatform) {
-    case 'win32':
-      supportedTargets.push('--win', '--linux');
-      platformInfo.push('Windows: .exe 便携版', 'Linux: .tar.gz 压缩包');
-      console.log('ℹ️  在Windows平台上，支持构建Windows和Linux版本');
-      break;
-      
-    case 'darwin':
-      supportedTargets.push('--mac', '--win', '--linux');
-      platformInfo.push('macOS: .dmg 安装包', 'Windows: .exe 便携版', 'Linux: .tar.gz 压缩包');
-      console.log('ℹ️  在macOS平台上，支持构建所有平台版本');
-      break;
-      
-    case 'linux':
-      supportedTargets.push('--linux', '--win');
-      platformInfo.push('Linux: .tar.gz 压缩包', 'Windows: .exe 便携版');
-      console.log('ℹ️  在Linux平台上，支持构建Linux和Windows版本');
-      break;
-      
-    default:
-      supportedTargets.push('--win');
-      platformInfo.push('Windows: .exe 便携版');
-      console.log('ℹ️  默认仅构建Windows版本');
-      break;
+function startLocalWinCodeSignServer() {
+  if (!fs.existsSync(LOCAL_WIN_CODESIGN_ARCHIVE)) {
+    throw new Error(
+      `Local winCodeSign archive not found: ${LOCAL_WIN_CODESIGN_ARCHIVE}\n` +
+      'Place winCodeSign-2.6.0.7z in packaging/binaries/ before using local mode.'
+    );
   }
-  
-  const command = `electron-builder ${supportedTargets.join(' ')} --publish=never`;
-  runCommand(command, '构建所有支持的平台应用');
-  
-  console.log('\n✨ 所有支持平台版本构建完成！');
-  console.log('📍 输出目录: dist/');
-  platformInfo.forEach(info => console.log(`📦 ${info}`));
+
+  fs.mkdirSync(LOCAL_CACHE_DIR, { recursive: true });
+
+  return new Promise((resolve, reject) => {
+    const child = spawn(process.execPath, [LOCAL_SERVER_SCRIPT, LOCAL_WIN_CODESIGN_ARCHIVE], {
+      cwd: ROOT_DIR,
+      stdio: ['ignore', 'pipe', 'inherit'],
+    });
+
+    let settled = false;
+    const timeout = setTimeout(() => {
+      if (!settled) {
+        settled = true;
+        child.kill();
+        reject(new Error('Timed out while starting local winCodeSign server.'));
+      }
+    }, 10000);
+
+    child.once('exit', (code) => {
+      if (!settled) {
+        settled = true;
+        clearTimeout(timeout);
+        reject(new Error(`Local winCodeSign server exited before ready (code ${code ?? 'unknown'}).`));
+      }
+    });
+
+    child.stdout.once('data', (buffer) => {
+      if (settled) {
+        return;
+      }
+
+      settled = true;
+      clearTimeout(timeout);
+      const baseUrl = buffer.toString().trim();
+      resolve({
+        env: {
+          ELECTRON_BUILDER_BINARIES_MIRROR: `${baseUrl}/`,
+          ELECTRON_BUILDER_BINARIES_CUSTOM_DIR: LOCAL_WIN_CODESIGN_DIR,
+          NPM_CONFIG_ELECTRON_BUILDER_BINARIES_MIRROR: `${baseUrl}/`,
+          NPM_CONFIG_ELECTRON_BUILDER_BINARIES_CUSTOM_DIR: LOCAL_WIN_CODESIGN_DIR,
+          ELECTRON_BUILDER_CACHE: LOCAL_CACHE_DIR,
+        },
+        dispose() {
+          if (!child.killed) {
+            child.kill();
+          }
+        },
+      });
+    });
+  });
 }
 
-// 执行构建
-executeBuild();
+async function executeBuild() {
+  const currentPlatform = os.platform();
+  const builds = getTargetBuilds(buildTarget, currentPlatform);
+  const completed = [];
+  let localServer = null;
 
-console.log('\n🎉 构建完成！');
-console.log('\n📚 使用说明:');
-console.log('- 直接运行可执行文件即可启动应用');
-console.log('- 应用支持一键拷贝到其他电脑使用');
-console.log('- 支持 Windows、macOS、Linux 跨平台运行');
-console.log('\n💡 提示:');
-console.log('- Windows: 运行 .exe 文件或使用安装包');
-console.log('- macOS: 打开 .dmg 文件并拖拽到应用程序文件夹');
-console.log('- Linux: 运行 .AppImage 文件或安装 .deb 包');
+  console.log(`Current platform: ${currentPlatform}`);
+  if (buildTarget === 'all') {
+    console.log('Build mode: sequential multi-platform packaging');
+  }
+
+  try {
+    if (buildMode === 'local' && builds.some(build => build.needsWinCodeSign)) {
+      console.log('\n[setup] Starting local winCodeSign mirror...');
+      localServer = await startLocalWinCodeSignServer();
+      console.log(`[setup] Local mirror ready: ${localServer.env.ELECTRON_BUILDER_BINARIES_DOWNLOAD_OVERRIDE_URL}`);
+    }
+
+    for (const build of builds) {
+      const extraEnv = build.needsWinCodeSign && localServer ? localServer.env : {};
+      try {
+        runCommand(`electron-builder ${build.flag} --publish=never`, build.label, extraEnv);
+        completed.push(build);
+        showBuildInfo(build);
+      } catch (error) {
+        console.error(`\n[failed] ${build.label}`);
+        if (build.needsWinCodeSign && buildMode === 'remote') {
+          console.error('Hint: remote mode depends on downloading winCodeSign from GitHub.');
+        }
+        if (build.needsWinCodeSign && buildMode === 'local') {
+          console.error(`Hint: local mode uses ${LOCAL_WIN_CODESIGN_ARCHIVE}.`);
+        }
+        if (completed.length > 0) {
+          console.error(`Completed before failure: ${completed.map(item => item.label).join(', ')}`);
+        }
+        throw error;
+      }
+    }
+
+    console.log('\nPackaging completed successfully.');
+  } finally {
+    if (localServer) {
+      localServer.dispose();
+    }
+  }
+}
+
+executeBuild().catch((error) => {
+  console.error(error.message);
+  process.exit(1);
+});

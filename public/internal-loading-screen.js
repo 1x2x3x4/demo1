@@ -65,24 +65,6 @@
       #${ROOT_ID} .loading-panel {
         position: relative;
         width: min(460px, calc(100vw - 48px));
-        padding: 28px 28px 24px;
-        border: 1px solid rgba(144, 184, 255, 0.26);
-        border-radius: 18px;
-        background: rgba(10, 18, 31, 0.86);
-        box-shadow:
-          0 0 0 1px rgba(144, 184, 255, 0.08) inset,
-          0 18px 60px rgba(0, 0, 0, 0.42);
-        color: #e7f0ff;
-        backdrop-filter: blur(10px);
-      }
-
-      #${ROOT_ID} .loading-panel::before {
-        content: '';
-        position: absolute;
-        inset: 10px;
-        border: 1px dashed rgba(146, 184, 255, 0.24);
-        border-radius: 12px;
-        pointer-events: none;
       }
 
       #${ROOT_ID} .eyebrow {
@@ -103,7 +85,7 @@
       #${ROOT_ID} .meter {
         position: relative;
         margin-top: 18px;
-        height: 10px;
+        height: 8px;
         border-radius: 999px;
         overflow: hidden;
         background: rgba(111, 152, 225, 0.12);

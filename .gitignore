@@ -8,6 +8,7 @@ yarn-error.log*
 dist/
 build/
 .tmp-dist*/
+.eb-cache*/
 
 # 环境变量文件
 .env

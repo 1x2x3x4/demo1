@@ -117,18 +117,28 @@ npm run build
 ```bash
 npm run electron:build
 npm run electron:build-win
+npm run electron:build-win:local
 npm run electron:build-mac
 npm run electron:build-linux
 npm run electron:build-all
+npm run electron:build-all:local
 ```
+
+两套打包方案：
+
+- 在线方案：默认使用 GitHub 下载 `winCodeSign`
+- 本地方案：将 `winCodeSign-2.6.0.7z` 放到 [packaging/binaries](C:/Users/ASUS/Desktop/demo1/packaging/binaries)，再使用 `*:local` 命令
+- 本地方案默认“本地优先、官方回退”：本地缺少的二进制包会继续尝试走官方 GitHub 地址
 
 这些脚本是 `dist*` 脚本的兼容别名，当前实际仍会走：
 
 - `npm run dist`
 - `npm run dist:win`
+- `npm run dist:win:local`
 - `npm run dist:mac`
 - `npm run dist:linux`
 - `npm run dist:all`
+- `npm run dist:all:local`
 
 ### 桌面端输出目录
 
