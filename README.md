@@ -273,14 +273,6 @@ npm run electron:build
 - [packaging/build.js](C:/Users/ASUS/Desktop/demo1/packaging/build.js)
 - [packaging/electron-builder.yml](C:/Users/ASUS/Desktop/demo1/packaging/electron-builder.yml)
 
-### 临时产物影响工作区
-
-已忽略：
-
-- `.tmp-dist*/`
-
-如果需要清理磁盘文件，请手动删除对应目录。
-
 ## 说明
 
 - 本 README 是当前唯一维护的主说明文档
