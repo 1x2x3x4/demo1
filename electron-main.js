@@ -25,12 +25,20 @@ function resolveStartTarget() {
 function resolveWindowIcon() {
   const candidates = app.isPackaged
     ? [
+        path.join(process.resourcesPath, 'assets', 'icons', 'x64', 'icon.ico'),
+        path.join(process.resourcesPath, 'assets', 'icons', 'x64', 'icon.png'),
         path.join(process.resourcesPath, 'assets', 'icons', 'icon.png'),
+        path.join(process.resourcesPath, 'assets', 'icons', 'icon.ico'),
         path.join(process.resourcesPath, 'icon.png'),
+        path.join(process.resourcesPath, 'icon.ico'),
       ]
     : [
+        path.join(__dirname, 'assets', 'icons', 'x64', 'icon.ico'),
+        path.join(__dirname, 'assets', 'icons', 'x64', 'icon.png'),
         path.join(__dirname, 'assets', 'icons', 'icon.png'),
+        path.join(__dirname, 'assets', 'icons', 'icon.ico'),
         path.join(__dirname, 'icon.png'),
+        path.join(__dirname, 'icon.ico'),
       ];
 
   return candidates.find((candidate) => fs.existsSync(candidate));
