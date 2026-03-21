@@ -1,8 +1,79 @@
-const { app, BrowserWindow } = require('electron');
+const { app, BrowserWindow, session } = require('electron');
 const fs = require('fs');
 const path = require('path');
 
 let mainWindow;
+let serialHandlersInstalled = false;
+
+function isTrustedSerialOrigin(origin) {
+  if (!origin || origin === 'null') {
+    return true;
+  }
+
+  try {
+    const parsedOrigin = new URL(origin);
+    return (
+      parsedOrigin.protocol === 'file:' ||
+      parsedOrigin.origin === 'http://localhost:8081' ||
+      parsedOrigin.origin === 'http://127.0.0.1:8081' ||
+      parsedOrigin.origin === 'http://[::1]:8081'
+    );
+  } catch (error) {
+    return false;
+  }
+}
+
+function pickPreferredSerialPort(portList) {
+  const preferredPort = portList.find((port) => {
+    const label = `${port.displayName || ''} ${port.portName || ''} ${port.vendorId || ''} ${port.productId || ''}`;
+    return /arduino|wch|ch340|cp210|usb/i.test(label);
+  });
+
+  return preferredPort || portList[0] || null;
+}
+
+function configureSerialPermissions() {
+  if (serialHandlersInstalled) {
+    return;
+  }
+
+  const targetSession = session.defaultSession;
+
+  targetSession.setPermissionCheckHandler((webContents, permission, requestingOrigin) => {
+    if (permission === 'serial') {
+      return isTrustedSerialOrigin(requestingOrigin) || isTrustedSerialOrigin(webContents?.getURL?.());
+    }
+
+    return true;
+  });
+
+  targetSession.setDevicePermissionHandler((details) => {
+    if (details.deviceType !== 'serial') {
+      return false;
+    }
+
+    return isTrustedSerialOrigin(details.origin);
+  });
+
+  targetSession.on('select-serial-port', (event, portList, webContents, callback) => {
+    if (!mainWindow || webContents !== mainWindow.webContents) {
+      callback('');
+      return;
+    }
+
+    if (!isTrustedSerialOrigin(webContents.getURL())) {
+      callback('');
+      return;
+    }
+
+    event.preventDefault();
+
+    const selectedPort = pickPreferredSerialPort(portList);
+    callback(selectedPort ? selectedPort.portId : '');
+  });
+
+  serialHandlersInstalled = true;
+}
 
 function resolveStartTarget() {
   if (process.env.NODE_ENV === 'development') {
@@ -92,7 +163,10 @@ function createWindow() {
   });
 }
 
-app.whenReady().then(createWindow);
+app.whenReady().then(() => {
+  configureSerialPermissions();
+  createWindow();
+});
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
