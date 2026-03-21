@@ -39,6 +39,9 @@
       ],
       "icon": "assets/icons/x64/icon.ico",
       "requestedExecutionLevel": "asInvoker"
+    },
+    "toolsets": {
+      "winCodeSign": "1.1.0"
     }
   },
   "keywords": [],

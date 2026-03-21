@@ -37,7 +37,24 @@ const NSIS_RESOURCES = {
   checksum: 'Dqd6g+2buwwvoG1Vyf6BHR1b+25QMmPcwZx40atOT57gH27rkjOei1L0JTldxZu4NFoEmW4kJgZ3DlSWVON3+Q==',
 };
 
-const MIRROR_RESOURCES = [NSIS_BINARY, NSIS_RESOURCES];
+const WIN_CODESIGN_VERSION = '1.1.0';
+
+const WIN_CODESIGN_RESOURCES = [
+  {
+    releaseName: `win-codesign@${WIN_CODESIGN_VERSION}`,
+    filename: 'win-codesign-windows-x64.zip',
+  },
+  {
+    releaseName: `win-codesign@${WIN_CODESIGN_VERSION}`,
+    filename: 'windows-kits-bundle-10_0_26100_0.zip',
+  },
+  {
+    releaseName: `win-codesign@${WIN_CODESIGN_VERSION}`,
+    filename: 'rcedit-windows-2_0_0.zip',
+  },
+];
+
+const MIRROR_RESOURCES = [NSIS_BINARY, NSIS_RESOURCES, ...WIN_CODESIGN_RESOURCES];
 
 function removeIfExists(targetPath) {
   if (fs.existsSync(targetPath)) {
@@ -287,13 +304,20 @@ async function executeBuild() {
     log(BUILD_SCOPE, `Using default Huawei Cloud binary mirror: ${mirrorProbe.baseUrl}`);
   }
 
-  log(BUILD_SCOPE, 'Mirror precheck passed for NSIS binary and NSIS resources.');
+  log(BUILD_SCOPE, 'Mirror precheck passed for NSIS and win-codesign resources.');
   builderArgs = builderArgs.concat(buildMirrorOverrides(mirrorProbe.baseUrl));
+  const builderEnv = {
+    ...createBuilderEnv(),
+    ELECTRON_BUILDER_BINARIES_MIRROR: mirrorProbe.baseUrl,
+    NPM_CONFIG_ELECTRON_BUILDER_BINARIES_MIRROR: mirrorProbe.baseUrl,
+    npm_config_electron_builder_binaries_mirror: mirrorProbe.baseUrl,
+  };
+  log(BUILD_SCOPE, `Using winCodeSign toolset ${WIN_CODESIGN_VERSION}.`);
 
   await prepareBuildArtifacts();
 
   try {
-    runElectronBuilder(builderArgs, createBuilderEnv());
+    runElectronBuilder(builderArgs, builderEnv);
   } catch (error) {
     cleanupTransientArtifacts();
     throw new Error(
