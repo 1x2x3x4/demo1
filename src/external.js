@@ -18,6 +18,15 @@ import { WaveDrawer } from '../scripts/waveDrawer.js';
 import LissajousDrawer from '../scripts/lissajousDrawer.js';
 import CalibrationLogic from '../scripts/calibrationLogic.js';
 import { StepAdjustmentUtils } from '../scripts/StepAdjustmentUtils.js';
+import {
+  createSerialSession,
+  createSerialState,
+  getSerialConnectButtonText,
+  getSerialStatusText,
+  getSerialStatusTone,
+  logSerialMessage,
+} from './hardware/serialSession.js';
+import { renderSerialWaveFrame } from './hardware/serialWaveRenderer.js';
 
 // ===== 全局变量定义 =====
 let app; // Vue 应用实例
@@ -46,7 +55,6 @@ function initApp() {
     app = createVueApp();
     
     // 挂载应用
-    app.$mount('#app');
     
     console.log('示波器应用初始化完成');
   } catch (error) {
@@ -134,7 +142,7 @@ function createVueApp() {
       // 暂停时显示的帧
       lastCapturedFrame: null,
       // 实验步骤控制
-      expStep: 'calibration', // 'calibration', 'normal', 'lissajous'
+      expStep: 'calibration', // 'calibration', 'normal', 'actual'
       calibrationFactor: APP_CONFIG.defaultValues.calibrationFactor, // 校准系数，1.0为标准校准
 
       // 自检模式专用数据 - 调整频率单位表示
@@ -176,6 +184,11 @@ function createVueApp() {
         highFrequencyThreshold: 20, // 高频率阈值
         autoSimplifyRatio: true     // 自动简化频率比例
       },
+      inputMode: 'simulation',
+      serial: createSerialState(),
+    },
+    created() {
+      this.serialSession = createSerialSession(this);
     },
     mounted() {
       try {
@@ -191,6 +204,15 @@ function createVueApp() {
       this.cleanup();
     },
     computed: {
+      serialStatusText() {
+        return getSerialStatusText(this.serial);
+      },
+      serialStatusTone() {
+        return getSerialStatusTone(this.serial);
+      },
+      serialConnectButtonText() {
+        return getSerialConnectButtonText(this.serial);
+      },
       // 计算滑块的最小值，最大值和步进值
       sliderRanges() {
         return {
@@ -290,6 +312,24 @@ function createVueApp() {
     },
     methods: {
       // ===== Canvas 初始化 =====
+      async toggleSerialConnection() {
+        await this.serialSession.toggleConnection();
+      },
+      async disconnectSerialPort({ manual } = { manual: false }) {
+        await this.serialSession.disconnect({ manual });
+      },
+      renderSerialWave() {
+        renderSerialWaveFrame({
+          ctx: this.ctx,
+          constants: WaveformUtilities.CONSTANTS,
+          serial: this.serial,
+          serialStatusText: this.serialStatusText,
+          timeDiv: this.timeDiv,
+          voltsDiv: this.voltsDiv[1],
+          horizontalPosition: this.horizontalPosition,
+          verticalPosition: this.verticalPosition[1],
+        });
+      },
       initCanvas() {
         const canvas = this.$refs.oscilloscope;
         if (!canvas) {
@@ -330,6 +370,9 @@ function createVueApp() {
           cancelAnimationFrame(this.animationId);
           this.animationId = null;
         }
+        if (this.serialSession) {
+          this.serialSession.cleanup();
+        }
         
         // 移除所有事件监听器
         document.removeEventListener('mousemove', this.handleMouseMove);
@@ -367,12 +410,33 @@ function createVueApp() {
       },
 
       // ===== 实验步骤控制 =====
-      setExpStep(step) {
+      async setExpStep(step) {
         // 使用CalibrationLogic模块化函数设置实验步骤
-        Object.assign(this, CalibrationLogic.setExperimentStep(this, step));
+        if (!['calibration', 'normal', 'actual'].includes(step)) {
+          return;
+        }
+
+        if (this.expStep === 'actual' && step !== 'actual' && this.serial.port) {
+          await this.disconnectSerialPort({ manual: true });
+        }
+
+        const internalStep = step === 'actual' ? 'normal' : step;
+
+        Object.assign(this, CalibrationLogic.setExperimentStep(this, internalStep));
+        this.expStep = step;
+
+        if (step === 'actual') {
+          this.inputMode = 'serial';
+          this.currentMode = 'wave';
+          this.displayMode = 'independent';
+          this.serial.resumeOnReconnect = true;
+        } else {
+          this.inputMode = 'simulation';
+          this.serial.resumeOnReconnect = false;
+        }
         
         // 如果切换到标准测量模式，输出当前校准参数到控制台
-        if (step === 'normal') {
+        if (internalStep === 'normal') {
           console.log('当前校准参数 (仅控制台显示)', 
             'background:#42b983; color:white; padding:4px 6px; border-radius:3px; font-weight:bold', 
             'font-weight:normal');
@@ -381,6 +445,9 @@ function createVueApp() {
           console.log('通道1电压微调: ' + this.savedCalibrationSettings.displayAdjustFactors.volts[1].toFixed(2));
           console.log('通道2电压微调: ' + this.savedCalibrationSettings.displayAdjustFactors.volts[2].toFixed(2));
         }
+
+        this.needsRedraw = true;
+        this.refreshDisplay();
       },
 
       // ===== 波形控制 =====
@@ -394,10 +461,16 @@ function createVueApp() {
       toggleRunning() {
         this.isRunning = !this.isRunning;
         if (this.isRunning) {
+          if (this.inputMode === 'serial') {
+            logSerialMessage('Actual measurement resumed.', 'info');
+          }
           this.drawLoop();
         } else {
           cancelAnimationFrame(this.animationId);
           this.lastCapturedFrame = this.ctx.getImageData(0, 0, 800, 400);
+          if (this.inputMode === 'serial') {
+            logSerialMessage('Actual measurement paused. Display frozen and serial samples ignored.', 'warn');
+          }
         }
       },
 
@@ -511,7 +584,8 @@ function createVueApp() {
         WaveformUtilities.drawGrid(ctx);
         
         // 波形模式下绘制触发电平线
-        if (this.currentMode === 'wave' || this.expStep === 'calibration') {
+        if ((this.currentMode === 'wave' || this.expStep === 'calibration' || this.expStep === 'actual') &&
+            (this.inputMode !== 'serial' || this.expStep === 'actual')) {
           WaveDrawer.drawTriggerLevel(ctx, this.triggerLevelPosition);
         }
       },
@@ -520,6 +594,17 @@ function createVueApp() {
       refreshDisplay() {
         // 设置画布
         this.setupCanvas();
+        
+        if (this.inputMode === 'serial') {
+          this.renderSerialWave();
+          if (!this.isRunning) {
+            const { CONSTANTS } = WaveformUtilities;
+            this.lastCapturedFrame = this.ctx.getImageData(
+              0, 0, CONSTANTS.CANVAS.WIDTH, CONSTANTS.CANVAS.HEIGHT
+            );
+          }
+          return;
+        }
         
         if (this.currentMode === 'wave' || this.expStep === 'calibration') {
           // 调整相位
@@ -557,6 +642,14 @@ function createVueApp() {
 
           // 设置画布
           this.setupCanvas();
+
+          if (this.inputMode === 'serial') {
+            this.renderSerialWave();
+            if (this.isRunning) {
+              this.animationId = requestAnimationFrame(this.drawLoop);
+            }
+            return;
+          }
 
           if (this.currentMode === 'wave' || this.expStep === 'calibration') {
             // 调整相位
@@ -840,6 +933,9 @@ function createVueApp() {
       // ===== 设置显示模式 =====
       setDisplayMode(mode) {
         if (['independent', 'overlay', 'vertical'].includes(mode)) {
+          if (this.expStep === 'actual' && mode !== 'independent') {
+            return;
+          }
           // 如果是overlay或vertical模式，需要检查两个通道是否都已激活
           if (mode === 'overlay' || mode === 'vertical') {
             // 如果两个通道都激活，才设置为该模式

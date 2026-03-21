@@ -6,7 +6,7 @@
       font-family: sans-serif;
       height: 5%;
     }
-    
+
     /* 响应式 GUI 控制面板 - 以2560*1440为标准向下兼容 */
     .dg.main {
       position: absolute;
@@ -16,12 +16,12 @@
       z-index: 1000;
       transition: all 0.3s ease;
     }
-    
+
     .dg.main .close-button {
       position: relative;
       line-height: 19px;
     }
-    
+
     /* 2K显示器 (2560*1440) - 基准分辨率 */
     @media screen and (min-width: 2560px) and (min-height: 1440px) {
       .dg.main {
@@ -36,9 +36,9 @@
         font-size: 13px;
       }
     }
-    
+
     /* 标准FHD (1920*1080) */
-    @media screen and (max-width: 2559px) and (min-width: 1920px), 
+    @media screen and (max-width: 2559px) and (min-width: 1920px),
            screen and (max-height: 1439px) and (min-height: 1080px) {
       .dg.main {
         width: 350px;
@@ -49,7 +49,7 @@
         padding: 7px 0;
       }
     }
-    
+
     /* 中等分辨率 (1366*768, 1600*900) */
     @media screen and (max-width: 1919px) and (min-width: 1366px) {
       .dg.main {
@@ -64,7 +64,7 @@
         font-size: 11px;
       }
     }
-    
+
     /* 小屏幕 (1024*768) */
     @media screen and (max-width: 1365px) and (min-width: 1024px) {
       .dg.main {
@@ -79,7 +79,7 @@
         font-size: 10px;
       }
     }
-    
+
     /* 平板和小笔记本 (768px - 1023px) */
     @media screen and (max-width: 1023px) and (min-width: 768px) {
       .dg.main {
@@ -99,7 +99,7 @@
         font-size: 11px;
       }
     }
-    
+
     /* 移动设备 (< 768px) */
     @media screen and (max-width: 767px) {
       .dg.main {
@@ -124,8 +124,8 @@
       .dg.main .folder-name {
         font-size: 10px;
       }
-      
-      /* 调整info区域为移动设备优化 */
+
+      /* 调整 info 区域为移动设备优化 */
       #info {
         font-size: 12px;
         padding: 0.3rem;
@@ -133,7 +133,7 @@
         min-height: 40px;
       }
     }
-    
+
     /* 超小屏幕优化 */
     @media screen and (max-width: 480px) {
       .dg.main {
@@ -154,5 +154,5 @@
         font-size: 7px;
       }
     }
-    
+
     #switch-to-external { display:none; }</style><script defer="defer" src="./js/three.bundle.js"></script><script defer="defer" src="./js/vendors.bundle.js"></script><script defer="defer" src="./js/internal.bundle.js"></script></head><body><div id="info">鼠标拖动旋转，滚轮缩放观察模型</div><script src="./internal-loading-screen.js"></script></body></html>

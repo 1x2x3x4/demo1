@@ -4,7 +4,8 @@
   <meta charset="UTF-8">
   <title>示波器仿真系统</title>
   <!-- Webpack 会在此页自动注入所需的 bundle 脚本和样式 -->
-  <!-- 注意：此页专属于"外部面板/示波器"演示，互不干扰 -->
+  <!-- 注意：此页专属于“外部面板/示波器”演示，互不干扰 -->
+  <script src="./assets/CDN/vue.min.js"></script>
 </head>
 <body>
   <!-- 整体应用容器 -->
@@ -12,11 +13,12 @@
     <!-- 页面标题 -->
     <header>
       <h1>示波器仿真系统</h1>
-      
+
       <!-- 实验步骤切换 -->
       <div class="exp-steps">
         <button @click="setExpStep('calibration')" :class="{ active: expStep === 'calibration' }">1. 自检校准</button>
         <button id="normal-mode-btn" @click="setExpStep('normal')" :class="{ active: expStep === 'normal' }">2. 标准测量</button>
+        <button @click="setExpStep('actual')" :class="{ active: expStep === 'actual' }">3. 实际测量</button>
       </div>
     </header>
 
@@ -26,8 +28,7 @@
       <aside>
         <!-- 自检校准模式 -->
         <div v-if="expStep === 'calibration'" class="calibration-panel">
-          <h2>示波器自检校准</h2>      
-          <!-- 添加通道控制按钮 -->
+          <h2>示波器自检校准</h2>
           <section>
             <h3>通道控制</h3>
             <div class="channel-control">
@@ -40,43 +41,41 @@
               </div>
             </div>
           </section>
-                   
+
           <div class="calibration-info">
             <div class="info-row">
-              <strong>当前通道配置 (固定参数)：</strong>
+              <strong>当前通道配置（固定参数）：</strong>
               <div class="info-channel">
-                <div>通道1: 方波 (1 Hz, 4Vpp)</div>
-                <div>通道2: 方波 (1 Hz, 4Vpp)</div>
+                <div>通道1：方波（1 Hz, 4Vpp）</div>
+                <div>通道2：方波（1 Hz, 4Vpp）</div>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- 整合的波形和李萨如图模式UI -->
+        <!-- 整合的波形和李萨如图模式 UI -->
         <div class="control-panel">
-          <!-- 参数设置组 -->
           <div class="parameter-settings">
-            <section class="parameter-section signal-source-section" v-if="expStep !== 'calibration'">
+            <section class="parameter-section signal-source-section" v-if="expStep === 'normal'">
               <div class="section-header">
                 <span class="section-label">信号源</span>
               </div>
-              
-              <!-- 将波形选择和通道控制移入参数设置区 -->
+
               <div class="signal-source-controls">
-                <!-- 波形选择 -->
                 <div class="wave-select-container">
                   <h4>波形选择</h4>
                   <div class="wave-select">
-                    <button v-for="wave in waveTypes" 
-                            :key="wave.type" 
-                            @click="setSignalType(wave.type)"
-                            :class="{ active: signalType === wave.type }">
+                    <button
+                      v-for="wave in waveTypes"
+                      :key="wave.type"
+                      @click="setSignalType(wave.type)"
+                      :class="{ active: signalType === wave.type }"
+                    >
                       {{ wave.name }}
                     </button>
                   </div>
                 </div>
 
-                <!-- 通道控制 -->
                 <div class="channel-control-container">
                   <h4>通道控制</h4>
                   <div class="channel-control">
@@ -90,8 +89,7 @@
                   </div>
                 </div>
               </div>
-              
-              <!-- 参数控制部分 -->
+
               <div class="parameter-control">
                 <h4>参数设置</h4>
                 <table>
@@ -106,72 +104,91 @@
                     <tr class="knob">
                       <td><label for="peak-ch1">峰峰值（Vpp）:</label></td>
                       <td>
-                        <input type="number" 
-                              id="peak-ch1"
-                              name="peak-ch1"
-                              :value="expStep === 'calibration' ? calibrationParams.peakValues[1] : peakValues[1]" 
-                              @input="e => expStep !== 'calibration' && $set(peakValues, 1, Number(e.target.value))"
-                              min="0.1" max="10" step="0.1"
-                              :disabled="expStep === 'calibration'">
+                        <input
+                          type="number"
+                          id="peak-ch1"
+                          name="peak-ch1"
+                          :value="expStep === 'calibration' ? calibrationParams.peakValues[1] : peakValues[1]"
+                          @input="e => expStep !== 'calibration' && $set(peakValues, 1, Number(e.target.value))"
+                          min="0.1"
+                          max="10"
+                          step="0.1"
+                          :disabled="expStep === 'calibration'"
+                        >
                       </td>
                       <td>
-                        <input type="number"
-                              id="peak-ch2"
-                              name="peak-ch2"
-                              :value="expStep === 'calibration' ? calibrationParams.peakValues[2] : peakValues[2]" 
-                              @input="e => expStep !== 'calibration' && $set(peakValues, 2, Number(e.target.value))"
-                              min="0.1" max="10" step="0.1"
-                              :disabled="expStep === 'calibration'">
+                        <input
+                          type="number"
+                          id="peak-ch2"
+                          name="peak-ch2"
+                          :value="expStep === 'calibration' ? calibrationParams.peakValues[2] : peakValues[2]"
+                          @input="e => expStep !== 'calibration' && $set(peakValues, 2, Number(e.target.value))"
+                          min="0.1"
+                          max="10"
+                          step="0.1"
+                          :disabled="expStep === 'calibration'"
+                        >
                       </td>
                     </tr>
                     <tr class="knob">
                       <td><label for="freq-ch1">频率（Hz）:</label></td>
                       <td>
-                        <input type="number"
-                              id="freq-ch1"
-                              name="freq-ch1"
-                              :value="currentMode === 'lissajous' ? freqX : (expStep === 'calibration' ? calibrationParams.frequencies[1] : frequencies[1])" 
-                              @input="e => {
-                                if (currentMode === 'lissajous') {
-                                  freqX = Number(e.target.value);
-                                  needsRedraw = true;
-                                  refreshDisplay();
-                                } else if (expStep !== 'calibration') {
-                                  $set(frequencies, 1, Number(e.target.value))
-                                }
-                              }"
-                              min="0.1" max="10" step="0.1"
-                              :disabled="expStep === 'calibration' && currentMode !== 'lissajous'">
+                        <input
+                          type="number"
+                          id="freq-ch1"
+                          name="freq-ch1"
+                          :value="currentMode === 'lissajous' ? freqX : (expStep === 'calibration' ? calibrationParams.frequencies[1] : frequencies[1])"
+                          @input="e => {
+                            if (currentMode === 'lissajous') {
+                              freqX = Number(e.target.value);
+                              needsRedraw = true;
+                              refreshDisplay();
+                            } else if (expStep !== 'calibration') {
+                              $set(frequencies, 1, Number(e.target.value))
+                            }
+                          }"
+                          min="0.1"
+                          max="10"
+                          step="0.1"
+                          :disabled="expStep === 'calibration' && currentMode !== 'lissajous'"
+                        >
                       </td>
                       <td>
-                        <input type="number"
-                              id="freq-ch2"
-                              name="freq-ch2"
-                              :value="currentMode === 'lissajous' ? freqY : (expStep === 'calibration' ? calibrationParams.frequencies[2] : frequencies[2])" 
-                              @input="e => {
-                                if (currentMode === 'lissajous') {
-                                  freqY = Number(e.target.value);
-                                  needsRedraw = true;
-                                  refreshDisplay();
-                                } else if (expStep !== 'calibration') {
-                                  $set(frequencies, 2, Number(e.target.value))
-                                }
-                              }"
-                              min="0.1" max="10" step="0.1"
-                              :disabled="expStep === 'calibration' && currentMode !== 'lissajous'">
+                        <input
+                          type="number"
+                          id="freq-ch2"
+                          name="freq-ch2"
+                          :value="currentMode === 'lissajous' ? freqY : (expStep === 'calibration' ? calibrationParams.frequencies[2] : frequencies[2])"
+                          @input="e => {
+                            if (currentMode === 'lissajous') {
+                              freqY = Number(e.target.value);
+                              needsRedraw = true;
+                              refreshDisplay();
+                            } else if (expStep !== 'calibration') {
+                              $set(frequencies, 2, Number(e.target.value))
+                            }
+                          }"
+                          min="0.1"
+                          max="10"
+                          step="0.1"
+                          :disabled="expStep === 'calibration' && currentMode !== 'lissajous'"
+                        >
                       </td>
                     </tr>
-                    <!-- 初相差控制 -->
                     <tr class="knob">
-                      <td><label for="phase-diff-new">初相差(°):</label></td>
+                      <td><label for="phase-diff-new">初相差（°）:</label></td>
                       <td colspan="2">
                         <div class="phase-control">
                           <button @click="adjustParam('phaseDiff', -10)" aria-label="减小初相差" class="arrow-button">&#8592;</button>
-                          <input type="number" 
-                                id="phase-diff-new" 
-                                v-model.number="phaseDiff" 
-                                min="0" max="360" step="5"
-                                @input="needsRedraw = true; refreshDisplay();">
+                          <input
+                            type="number"
+                            id="phase-diff-new"
+                            v-model.number="phaseDiff"
+                            min="0"
+                            max="360"
+                            step="5"
+                            @input="needsRedraw = true; refreshDisplay();"
+                          >
                           <button @click="adjustParam('phaseDiff', 10)" aria-label="增加初相差" class="arrow-button">&#8594;</button>
                         </div>
                       </td>
@@ -181,202 +198,263 @@
               </div>
             </section>
 
-            
-            <!-- 显示模式切换-->
+            <section class="serial-input-section" v-if="expStep === 'actual'">
+              <h3>硬件输入</h3>
+              <div class="serial-connection-row">
+                <button
+                  class="serial-connect-button"
+                  @click="toggleSerialConnection"
+                  :disabled="!serial.supported || serial.status === 'connecting'"
+                >
+                  {{ serialConnectButtonText }}
+                </button>
+                <span class="serial-status-pill" :class="serialStatusTone">
+                  {{ serialStatusText }}
+                </span>
+              </div>
+            </section>
+
             <div class="display-mode-switcher" v-if="expStep !== 'calibration'">
               <h3>显示模式</h3>
               <div class="display-mode-buttons">
-                <button @click="setDisplayMode('independent')" 
-                        :class="{ active: displayMode === 'independent' }">
+                <button
+                  @click="setDisplayMode('independent')"
+                  :class="{ active: displayMode === 'independent' }"
+                >
                   独立显示
                 </button>
-                <button @click="setDisplayMode('overlay')" 
-                        :class="{ active: displayMode === 'overlay' }">
+                <button
+                  @click="setDisplayMode('overlay')"
+                  :disabled="expStep === 'actual'"
+                  :class="{ active: displayMode === 'overlay' }"
+                >
                   同向叠加
                 </button>
-                <button id="lissajous-mode-btn" @click="setDisplayMode('vertical')" 
-                        :class="{ active: displayMode === 'vertical' }">
+                <button
+                  id="lissajous-mode-btn"
+                  @click="setDisplayMode('vertical')"
+                  :disabled="expStep === 'actual'"
+                  :class="{ active: displayMode === 'vertical' }"
+                >
                   垂直叠加
                 </button>
               </div>
             </div>
 
-            <!-- 时间与电压控制部分 -->
-<section class="time-voltage-section">
-  <h2>{{ displayMode === 'vertical' ? '电压' : '时间与电压' }}</h2>
+            <section class="time-voltage-section">
+              <h2>{{ displayMode === 'vertical' ? '电压' : '时间与电压' }}</h2>
 
-  <table>
-    <!-- ───────── 时间 (或 X 频率) ───────── -->
-    <tr v-if="displayMode !== 'vertical'">
-      <td style="padding-left: 40px;">
-        <label v-if="currentMode !== 'lissajous'" for="time-div">时间（s/div）</label>
-        <label v-else for="time-div">X轴频率</label>
-      </td>
+              <table>
+                <tr v-if="displayMode !== 'vertical'">
+                  <td style="padding-left: 40px;">
+                    <label v-if="currentMode !== 'lissajous'" for="time-div">时间（s/div）</label>
+                    <label v-else for="time-div">X轴频率</label>
+                  </td>
 
-      <td class="control-group">
-        <div class="reading-controls">
-          <button @click="currentMode==='lissajous'?adjustParam('freqX',-0.1):adjustParam('timeDiv',-1)">-</button>
+                  <td class="control-group">
+                    <div class="reading-controls">
+                      <button @click="currentMode==='lissajous'?adjustParam('freqX',-0.1):adjustParam('timeDiv',-1)">-</button>
 
-          <input type="number"
-                 id="time-div"
-                 name="time-div"
-                 :value="currentMode==='lissajous'?freqX:timeDiv"
-                 @input="e=>{
-                   if(currentMode==='lissajous'){freqX=Number(e.target.value);needsRedraw=true;refreshDisplay();}
-                   else{timeDiv=Number(e.target.value);}
-                 }"
-                 @keydown.left="currentMode==='lissajous'?adjustParam('freqX',-0.1):adjustParam('timeDiv',-1)"
-                 @keydown.right="currentMode==='lissajous'?adjustParam('freqX',0.1):adjustParam('timeDiv',1)"
-                 @change="currentMode!=='lissajous'&&validateInput('time')"
-                 min="0.1" max="100" step="0.1">
+                      <input
+                        type="number"
+                        id="time-div"
+                        name="time-div"
+                        :value="currentMode==='lissajous'?freqX:timeDiv"
+                        @input="e => {
+                          if (currentMode === 'lissajous') {
+                            freqX = Number(e.target.value);
+                            needsRedraw = true;
+                            refreshDisplay();
+                          } else {
+                            timeDiv = Number(e.target.value);
+                          }
+                        }"
+                        @keydown.left="currentMode==='lissajous'?adjustParam('freqX',-0.1):adjustParam('timeDiv',-1)"
+                        @keydown.right="currentMode==='lissajous'?adjustParam('freqX',0.1):adjustParam('timeDiv',1)"
+                        @change="currentMode!=='lissajous' && validateInput('time')"
+                        min="0.1"
+                        max="100"
+                        step="0.1"
+                      >
 
-          <button @click="currentMode==='lissajous'?adjustParam('freqX',0.1):adjustParam('timeDiv',1)">+</button>
-        </div>
-      </td>
-    </tr>
+                      <button @click="currentMode==='lissajous'?adjustParam('freqX',0.1):adjustParam('timeDiv',1)">+</button>
+                    </div>
+                  </td>
+                </tr>
 
-    <!--时间滑块独占一行-->
-    <tr v-if="displayMode !== 'vertical' && expStep === 'calibration'" class="slider-row">
-      <td colspan="2">
-        <div class="slider-container">
-          <div class="slider-tooltip">波形显示微调</div>
-          <div class="slider"
-               @mousedown="startSlider('time',null)"
-               :class="{active:sliderActive&&sliderActive.type==='time'}"
-               :style="{ '--slider-value':calculateSliderPosition('time') }"
-               role="slider"
-               aria-valuemin="0.1" aria-valuemax="2.0"
-               :aria-valuenow="displayAdjustFactors.time"></div>
-          <!-- <div class="slider-value-display">{{ displayAdjustFactors.time.toFixed(2) }}</div> -->
-        </div>
-      </td>
-    </tr>
+                <tr v-if="displayMode !== 'vertical' && expStep === 'calibration'" class="slider-row">
+                  <td colspan="2">
+                    <div class="slider-container">
+                      <div class="slider-tooltip">波形显示微调</div>
+                      <div
+                        class="slider"
+                        @mousedown="startSlider('time', null)"
+                        :class="{ active: sliderActive && sliderActive.type === 'time' }"
+                        :style="{ '--slider-value': calculateSliderPosition('time') }"
+                        role="slider"
+                        aria-valuemin="0.1"
+                        aria-valuemax="2.0"
+                        :aria-valuenow="displayAdjustFactors.time"
+                      ></div>
+                    </div>
+                  </td>
+                </tr>
 
-    <!-- ───────── 电压 CH1 ───────── -->
-    <tr>
-      <td style="padding-left:40px; white-space:nowrap;"><label for="volts-div-1">电压CH1（V/div）</label></td>
-      <td class="control-group">
-        <div class="reading-controls">
-          <button @click="adjustParam('voltsDiv',-0.1,1)">-</button>
-          <input type="number"
-                 id="volts-div-1"
-                 name="volts-div-1"
-                 :value="voltsDiv[1]"
-                 @input="e=>{
-                   voltsDiv[1]=Number(e.target.value);
-                   if(displayMode==='vertical'){needsRedraw=true;validateInput('volts',1);}
-                 }"
-                 @keydown.left="adjustParam('voltsDiv',-0.1,1)"
-                 @keydown.right="adjustParam('voltsDiv',0.1,1)"
-                 @change="validateInput('volts',1)"
-                 min="0.1" max="10" step="0.01">
-          <button @click="adjustParam('voltsDiv',0.1,1)">+</button>
-        </div>
-      </td>
-    </tr>
+                <tr>
+                  <td style="padding-left:40px; white-space:nowrap;"><label for="volts-div-1">电压CH1（V/div）</label></td>
+                  <td class="control-group">
+                    <div class="reading-controls">
+                      <button @click="adjustParam('voltsDiv', -0.1, 1)">-</button>
+                      <input
+                        type="number"
+                        id="volts-div-1"
+                        name="volts-div-1"
+                        :value="voltsDiv[1]"
+                        @input="e => {
+                          voltsDiv[1] = Number(e.target.value);
+                          if (displayMode === 'vertical') {
+                            needsRedraw = true;
+                            validateInput('volts', 1);
+                          }
+                        }"
+                        @keydown.left="adjustParam('voltsDiv', -0.1, 1)"
+                        @keydown.right="adjustParam('voltsDiv', 0.1, 1)"
+                        @change="validateInput('volts', 1)"
+                        min="0.1"
+                        max="10"
+                        step="0.01"
+                      >
+                      <button @click="adjustParam('voltsDiv', 0.1, 1)">+</button>
+                    </div>
+                  </td>
+                </tr>
 
-    <!--  CH1 滑块独占一行 -->
-    <tr v-if="expStep === 'calibration'" class="slider-row">
-      <td colspan="2">
-        <div class="slider-container">
-          <div class="slider-tooltip">波形显示微调</div>
-          <div class="slider"
-               @mousedown="startSlider('volts',1)"
-               :class="{active:sliderActive&&sliderActive.type==='volts'&&sliderActive.line===1}"
-               :style="{ '--slider-value':calculateSliderPosition('volts',1) }"
-               role="slider"
-               :aria-valuenow="displayAdjustFactors.volts[1]"
-               aria-valuemin="0.1" aria-valuemax="2.0"></div>
-          <!-- <div class="slider-value-display">{{ displayAdjustFactors.volts[1].toFixed(2) }}</div> -->
-        </div>
-      </td>
-    </tr>
+                <tr v-if="expStep === 'calibration'" class="slider-row">
+                  <td colspan="2">
+                    <div class="slider-container">
+                      <div class="slider-tooltip">波形显示微调</div>
+                      <div
+                        class="slider"
+                        @mousedown="startSlider('volts', 1)"
+                        :class="{ active: sliderActive && sliderActive.type === 'volts' && sliderActive.line === 1 }"
+                        :style="{ '--slider-value': calculateSliderPosition('volts', 1) }"
+                        role="slider"
+                        :aria-valuenow="displayAdjustFactors.volts[1]"
+                        aria-valuemin="0.1"
+                        aria-valuemax="2.0"
+                      ></div>
+                    </div>
+                  </td>
+                </tr>
 
-    <!-- ───────── 电压 CH2 ───────── -->
-    <tr>
-      <td style="padding-left:40px; white-space:nowrap;"><label for="volts-div-2">电压CH2（V/div）</label></td>
-      <td class="control-group">
-        <div class="reading-controls">
-          <button @click="adjustParam('voltsDiv',-0.1,2)">-</button>
-          <input type="number"
-                 id="volts-div-2"
-                 name="volts-div-2"
-                 :value="voltsDiv[2]"
-                 @input="e=>{
-                   voltsDiv[2]=Number(e.target.value);
-                   if(displayMode==='vertical'){needsRedraw=true;validateInput('volts',2);}
-                 }"
-                 @keydown.left="adjustParam('voltsDiv',-0.1,2)"
-                 @keydown.right="adjustParam('voltsDiv',0.1,2)"
-                 @change="validateInput('volts',2)"
-                 min="0.1" max="10" step="0.01">
-          <button @click="adjustParam('voltsDiv',0.1,2)">+</button>
-        </div>
-      </td>
-    </tr>
+                <tr>
+                  <td style="padding-left:40px; white-space:nowrap;"><label for="volts-div-2">电压CH2（V/div）</label></td>
+                  <td class="control-group">
+                    <div class="reading-controls">
+                      <button @click="adjustParam('voltsDiv', -0.1, 2)">-</button>
+                      <input
+                        type="number"
+                        id="volts-div-2"
+                        name="volts-div-2"
+                        :value="voltsDiv[2]"
+                        @input="e => {
+                          voltsDiv[2] = Number(e.target.value);
+                          if (displayMode === 'vertical') {
+                            needsRedraw = true;
+                            validateInput('volts', 2);
+                          }
+                        }"
+                        @keydown.left="adjustParam('voltsDiv', -0.1, 2)"
+                        @keydown.right="adjustParam('voltsDiv', 0.1, 2)"
+                        @change="validateInput('volts', 2)"
+                        min="0.1"
+                        max="10"
+                        step="0.01"
+                      >
+                      <button @click="adjustParam('voltsDiv', 0.1, 2)">+</button>
+                    </div>
+                  </td>
+                </tr>
 
-    <!--滑块独占一行 -->
-    <tr v-if="expStep === 'calibration'" class="slider-row">
-      <td colspan="2">
-        <div class="slider-container">
-          <div class="slider-tooltip">波形显示微调</div>
-          <div class="slider"
-               @mousedown="startSlider('volts',2)"
-               :class="{active:sliderActive&&sliderActive.type==='volts'&&sliderActive.line===2}"
-               :style="{ '--slider-value':calculateSliderPosition('volts',2) }"
-               role="slider"
-               :aria-valuenow="displayAdjustFactors.volts[2]"
-               aria-valuemin="0.1" aria-valuemax="2.0"></div>
-          <!-- <div class="slider-value-display">{{ displayAdjustFactors.volts[2].toFixed(2) }}</div> -->
-        </div>
-      </td>
-    </tr>
+                <tr v-if="expStep === 'calibration'" class="slider-row">
+                  <td colspan="2">
+                    <div class="slider-container">
+                      <div class="slider-tooltip">波形显示微调</div>
+                      <div
+                        class="slider"
+                        @mousedown="startSlider('volts', 2)"
+                        :class="{ active: sliderActive && sliderActive.type === 'volts' && sliderActive.line === 2 }"
+                        :style="{ '--slider-value': calculateSliderPosition('volts', 2) }"
+                        role="slider"
+                        :aria-valuenow="displayAdjustFactors.volts[2]"
+                        aria-valuemin="0.1"
+                        aria-valuemax="2.0"
+                      ></div>
+                    </div>
+                  </td>
+                </tr>
 
-    <!-- ───────── 水平位置 ───────── -->
-    <tr>
-      <td style="padding-left:40px; white-space:nowrap;"><label for="horizontal-pos">水平位置</label></td>
-      <td class="control-group" style="justify-content:center;">
-        <div class="position-controls">
-          <button @click="adjustPosition('horizontal',-0.1)" class="arrow-button">&#8592;</button>
-          <input type="number" id="horizontal-pos" v-model.number="horizontalPosition"
-                 min="-8" max="8" step="0.1" style="display:none;">
-          <button @click="adjustPosition('horizontal',0.1)" class="arrow-button">&#8594;</button>
-        </div>
-      </td>
-    </tr>
+                <tr>
+                  <td style="padding-left:40px; white-space:nowrap;"><label for="horizontal-pos">水平位置</label></td>
+                  <td class="control-group" style="justify-content:center;">
+                    <div class="position-controls">
+                      <button @click="adjustPosition('horizontal', -0.1)" class="arrow-button">&#8592;</button>
+                      <input
+                        type="number"
+                        id="horizontal-pos"
+                        v-model.number="horizontalPosition"
+                        min="-8"
+                        max="8"
+                        step="0.1"
+                        style="display:none;"
+                      >
+                      <button @click="adjustPosition('horizontal', 0.1)" class="arrow-button">&#8594;</button>
+                    </div>
+                  </td>
+                </tr>
 
-    <!-- ───────── 垂直位置（合并）───────── -->
-    <tr>
-      <td style="padding-left:40px; white-space:nowrap;"><label>垂直位置</label></td>
-      <td class="control-group" style="justify-content:space-around;">
-        <!-- CH1 -->
-        <div class="position-controls">
-          <span>CH1</span>
-          <button @click="adjustPosition('vertical',-0.1,1)" class="arrow-button">&#8593;</button>
-          <input type="number" id="vertical-pos-1" v-model.number="verticalPosition[1]"
-                 min="-4" max="4" step="0.1" style="display:none;">
-          <button @click="adjustPosition('vertical',0.1,1)" class="arrow-button">&#8595;</button>
-        </div>
-        <!-- CH2 -->
-        <div class="position-controls">
-          <span>CH2</span>
-          <button @click="adjustPosition('vertical',-0.1,2)" class="arrow-button">&#8593;</button>
-          <input type="number" id="vertical-pos-2" v-model.number="verticalPosition[2]"
-                 min="-4" max="4" step="0.1" style="display:none;">
-          <button @click="adjustPosition('vertical',0.1,2)" class="arrow-button">&#8595;</button>
-        </div>
-      </td>
-    </tr>
-  </table>
-</section>
+                <tr>
+                  <td style="padding-left:40px; white-space:nowrap;"><label>垂直位置</label></td>
+                  <td class="control-group" style="justify-content:space-around;">
+                    <div class="position-controls">
+                      <span>CH1</span>
+                      <button @click="adjustPosition('vertical', -0.1, 1)" class="arrow-button">&#8593;</button>
+                      <input
+                        type="number"
+                        id="vertical-pos-1"
+                        v-model.number="verticalPosition[1]"
+                        min="-4"
+                        max="4"
+                        step="0.1"
+                        style="display:none;"
+                      >
+                      <button @click="adjustPosition('vertical', 0.1, 1)" class="arrow-button">&#8595;</button>
+                    </div>
+                    <div class="position-controls">
+                      <span>CH2</span>
+                      <button @click="adjustPosition('vertical', -0.1, 2)" class="arrow-button">&#8593;</button>
+                      <input
+                        type="number"
+                        id="vertical-pos-2"
+                        v-model.number="verticalPosition[2]"
+                        min="-4"
+                        max="4"
+                        step="0.1"
+                        style="display:none;"
+                      >
+                      <button @click="adjustPosition('vertical', 0.1, 2)" class="arrow-button">&#8595;</button>
+                    </div>
+                  </td>
+                </tr>
+              </table>
+            </section>
 
-            <!-- 触发和电平控制 -->
             <section class="trigger-section">
               <h3>触发系统控制</h3>
               <div class="trigger-description">
                 触发系统用于稳定波形显示，设置触发电平可捕获特定幅值的信号。
               </div>
-              
+
               <div class="trigger-controls">
                 <div class="trigger-row">
                   <div class="trigger-mode-control">
@@ -391,20 +469,23 @@
                     <label for="trigger-level">触发电平:</label>
                     <div class="level-knob">
                       <button @click="adjustLevel(-0.1)" aria-label="减小触发电平">-</button>
-                      <input type="number"
-                            id="trigger-level"
-                            name="trigger-level"
-                            v-model.number="triggerLevel" 
-                            min="-5" max="5" step="0.1"
-                            aria-label="触发电平值">
+                      <input
+                        type="number"
+                        id="trigger-level"
+                        name="trigger-level"
+                        v-model.number="triggerLevel"
+                        min="-5"
+                        max="5"
+                        step="0.1"
+                        aria-label="触发电平值"
+                      >
                       <button @click="adjustLevel(0.1)" aria-label="增加触发电平">+</button>
                     </div>
                   </div>
                 </div>
                 <div class="level-slider">
                   <div class="level-track">
-                    <div class="level-indicator" 
-                         :style="{ top: triggerLevelPosition + 'px' }"></div>
+                    <div class="level-indicator" :style="{ top: triggerLevelPosition + 'px' }"></div>
                   </div>
                   <div class="level-value">{{ triggerLevel.toFixed(1) }}V</div>
                 </div>
