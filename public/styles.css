@@ -246,6 +246,39 @@ input[type="number"] {
   margin: 0 5px;
 }
 
+.numeric-input-stack {
+  position: relative;
+  overflow: visible;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.numeric-input-error {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  z-index: 8;
+  padding: 2px 6px;
+  border-radius: 999px;
+  border: 1px solid rgba(248, 113, 113, 0.9);
+  background: rgba(127, 29, 29, 0.92);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.18);
+  color: #fef2f2;
+  font-size: 10px;
+  line-height: 1.1;
+  white-space: nowrap;
+  pointer-events: none;
+  transform: translate(45%, -65%);
+  opacity: 1;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.numeric-input-error--leaving {
+  opacity: 0;
+  transform: translate(45%, -85%);
+}
+
 /* 改进滑块容器样式，使其更明显 */
 .slider-container {
   width: 300px;    /* 将宽度从150px增加到300px */
@@ -273,6 +306,7 @@ input[type="number"] {
   border-radius: 3px;
   position: relative;
   box-shadow: inset 0 1px 2px rgba(0,0,0,0.15);
+  user-select: none;
 }
 
 /* 修改滑块指示器样式，使其能够从最左滑动到最右 */
@@ -315,6 +349,23 @@ input[type="number"] {
 /* 激活状态的滑块 */
 .slider.active {
   background: linear-gradient(90deg, #a0d0f0, #c0e0f8, #a0d0f0);
+}
+
+.slider-feedback {
+  position: absolute;
+  top: -24px;
+  right: 8px;
+  z-index: 4;
+  min-width: 42px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.85);
+  color: #f8fafc;
+  font-size: 11px;
+  line-height: 1.2;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.16);
+  pointer-events: none;
 }
 
 .factor-display {

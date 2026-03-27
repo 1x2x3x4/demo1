@@ -19,6 +19,38 @@ import LissajousDrawer from '../scripts/lissajousDrawer.js';
 import CalibrationLogic from '../scripts/calibrationLogic.js';
 import { StepAdjustmentUtils } from '../scripts/StepAdjustmentUtils.js';
 import {
+  createNumericInputState,
+  getNumericFieldConfig as getNumericFieldConfigFromController,
+  formatNumericFieldValue as formatNumericFieldValueFromController,
+  syncNumericDraft as syncNumericDraftFromController,
+  syncAllNumericDrafts as syncAllNumericDraftsFromController,
+  startNumericInput as startNumericInputFromController,
+  clearNumericInputError as clearNumericInputErrorFromController,
+  showNumericInputError as showNumericInputErrorFromController,
+  clearAllNumericErrorTimers as clearAllNumericErrorTimersFromController,
+  evaluateNumericDraft as evaluateNumericDraftFromController,
+  updateNumericDraft as updateNumericDraftFromController,
+  commitNumericInput as commitNumericInputFromController,
+} from './controllers/externalNumericInputs.js';
+import {
+  createCalibrationSliderState,
+  calculateSliderPosition as calculateSliderPositionFromController,
+  getCalibrationSliderKey as getCalibrationSliderKeyFromController,
+  getCalibrationSliderValue as getCalibrationSliderValueFromController,
+  setCalibrationSliderValue as setCalibrationSliderValueFromController,
+  getSliderFeedbackText as getSliderFeedbackTextFromController,
+  isSliderFeedbackVisible as isSliderFeedbackVisibleFromController,
+  setSliderHover as setSliderHoverFromController,
+  showSliderFeedback as showSliderFeedbackFromController,
+  clearAllSliderFeedbackTimers as clearAllSliderFeedbackTimersFromController,
+  updateCalibrationSliderFromClientX as updateCalibrationSliderFromClientXFromController,
+  startCalibrationSlider as startCalibrationSliderFromController,
+  handleCalibrationSliderMove as handleCalibrationSliderMoveFromController,
+  handleCalibrationSliderWheel as handleCalibrationSliderWheelFromController,
+  handleCalibrationSliderEnd as handleCalibrationSliderEndFromController,
+  cleanupCalibrationSlider as cleanupCalibrationSliderFromController,
+} from './controllers/calibrationSliderController.js';
+import {
   createSerialSession,
   createSerialState,
   getSerialConnectButtonText,
@@ -45,6 +77,133 @@ const APP_CONFIG = {
     frequencies: { 1: 1, 2: 1 }
   }
 };
+
+const NUMERIC_INPUT_CONFIG = {
+  peak1: {
+    min: 0.1,
+    max: 10,
+    precision: 3,
+    get(app) {
+      return app.expStep === 'calibration' ? app.calibrationParams.peakValues[1] : app.peakValues[1];
+    },
+    set(app, value) {
+      app.peakValues[1] = value;
+    },
+  },
+  peak2: {
+    min: 0.1,
+    max: 10,
+    precision: 3,
+    get(app) {
+      return app.expStep === 'calibration' ? app.calibrationParams.peakValues[2] : app.peakValues[2];
+    },
+    set(app, value) {
+      app.peakValues[2] = value;
+    },
+  },
+  freq1: {
+    min: 0.1,
+    max: 10,
+    precision: 3,
+    get(app) {
+      return app.currentMode === 'lissajous'
+        ? app.freqX
+        : (app.expStep === 'calibration' ? app.calibrationParams.frequencies[1] : app.frequencies[1]);
+    },
+    set(app, value) {
+      if (app.currentMode === 'lissajous') {
+        app.freqX = value;
+      } else {
+        app.frequencies[1] = value;
+      }
+    },
+  },
+  freq2: {
+    min: 0.1,
+    max: 10,
+    precision: 3,
+    get(app) {
+      return app.currentMode === 'lissajous'
+        ? app.freqY
+        : (app.expStep === 'calibration' ? app.calibrationParams.frequencies[2] : app.frequencies[2]);
+    },
+    set(app, value) {
+      if (app.currentMode === 'lissajous') {
+        app.freqY = value;
+      } else {
+        app.frequencies[2] = value;
+      }
+    },
+  },
+  phaseDiff: {
+    min: 0,
+    max: 360,
+    precision: 2,
+    get(app) {
+      return app.phaseDiff;
+    },
+    set(app, value) {
+      app.phaseDiff = value;
+    },
+  },
+  timeDiv: {
+    min: 0.1,
+    max: 100,
+    precision: 3,
+    get(app) {
+      return app.currentMode === 'lissajous' ? app.freqX : app.timeDiv;
+    },
+    set(app, value) {
+      if (app.currentMode === 'lissajous') {
+        app.freqX = value;
+      } else {
+        app.timeDiv = value;
+      }
+    },
+  },
+  volts1: {
+    min: 0.1,
+    max: 10,
+    precision: 3,
+    get(app) {
+      return app.voltsDiv[1];
+    },
+    set(app, value) {
+      app.voltsDiv[1] = value;
+    },
+  },
+  volts2: {
+    min: 0.1,
+    max: 10,
+    precision: 3,
+    get(app) {
+      return app.voltsDiv[2];
+    },
+    set(app, value) {
+      app.voltsDiv[2] = value;
+    },
+  },
+  triggerLevel: {
+    min: -5,
+    max: 5,
+    precision: 2,
+    get(app) {
+      return app.triggerLevel;
+    },
+    set(app, value) {
+      app.triggerLevel = value;
+    },
+  },
+};
+
+function formatNumericDraftValue(value, precision) {
+  if (!Number.isFinite(value)) {
+    return '';
+  }
+
+  const normalizedValue = Number(value.toFixed(precision));
+  return `${normalizedValue}`;
+}
 
 // ===== 初始化函数 =====
 function initApp() {
@@ -129,6 +288,8 @@ function createVueApp() {
       frequency: 1,
       // 当前激活的滑块
       sliderActive: null,
+      sliderHover: null,
+      sliderFeedback: null,
       // 滑块偏移值
       sliderOffset: 0,
       // 是否需要重绘
@@ -184,15 +345,21 @@ function createVueApp() {
         highFrequencyThreshold: 20, // 高频率阈值
         autoSimplifyRatio: true     // 自动简化频率比例
       },
+      ...createNumericInputState(),
+      ...createCalibrationSliderState(),
       inputMode: 'simulation',
       serial: createSerialState(),
     },
     created() {
       this.serialSession = createSerialSession(this);
+      this.inputErrorTimers = {};
+      this.sliderFeedbackTimers = {};
+      this.syncAllNumericDrafts({ force: true });
     },
     mounted() {
       try {
         this.initCanvas();
+        this.syncAllNumericDrafts({ force: true });
         this.initEventListeners();
         this.startDrawLoop();
         console.log('Vue 组件挂载完成');
@@ -201,6 +368,8 @@ function createVueApp() {
       }
     },
     beforeDestroy() {
+      this.clearAllNumericErrorTimers();
+      this.clearAllSliderFeedbackTimers();
       this.cleanup();
     },
     computed: {
@@ -290,18 +459,52 @@ function createVueApp() {
         this.timeDivFine = val;
         this.lastValidValue.time = val;
         this.sliderValues.time = 0;
+        this.syncNumericDraft('timeDiv');
       },
       'voltsDiv.1'(val) {
         this.voltsDivFine[1] = val;
         this.lastValidValue.volts[1] = val;
         this.sliderValues.volts[1] = 0;
+        this.syncNumericDraft('volts1');
       },
       'voltsDiv.2'(val) {
         this.voltsDivFine[2] = val;
         this.lastValidValue.volts[2] = val;
         this.sliderValues.volts[2] = 0;
+        this.syncNumericDraft('volts2');
       },
       // 监听校准系数变化
+      'peakValues.1'() {
+        this.syncNumericDraft('peak1');
+      },
+      'peakValues.2'() {
+        this.syncNumericDraft('peak2');
+      },
+      'frequencies.1'() {
+        this.syncNumericDraft('freq1');
+      },
+      'frequencies.2'() {
+        this.syncNumericDraft('freq2');
+      },
+      freqX() {
+        this.syncNumericDraft('freq1');
+        this.syncNumericDraft('timeDiv');
+      },
+      freqY() {
+        this.syncNumericDraft('freq2');
+      },
+      phaseDiff() {
+        this.syncNumericDraft('phaseDiff');
+      },
+      triggerLevel() {
+        this.syncNumericDraft('triggerLevel');
+      },
+      expStep() {
+        this.syncAllNumericDrafts({ force: true });
+      },
+      currentMode() {
+        this.syncAllNumericDrafts({ force: true });
+      },
       calibrationFactor(newVal) {
         this.needsRedraw = true;
         this.calibrationComplete = Math.abs(newVal - 1.0) < 0.02;
@@ -312,6 +515,39 @@ function createVueApp() {
     },
     methods: {
       // ===== Canvas 初始化 =====
+      getNumericFieldConfig(fieldKey) {
+        return getNumericFieldConfigFromController(fieldKey);
+      },
+      formatNumericFieldValue(fieldKey) {
+        return formatNumericFieldValueFromController(this, fieldKey);
+      },
+      syncNumericDraft(fieldKey, options) {
+        return syncNumericDraftFromController(this, fieldKey, options);
+      },
+      syncAllNumericDrafts(options) {
+        return syncAllNumericDraftsFromController(this, options);
+      },
+      startNumericInput(fieldKey) {
+        return startNumericInputFromController(this, fieldKey);
+      },
+      clearNumericInputError(fieldKey) {
+        return clearNumericInputErrorFromController(this, fieldKey);
+      },
+      showNumericInputError(fieldKey, options) {
+        return showNumericInputErrorFromController(this, fieldKey, options);
+      },
+      clearAllNumericErrorTimers() {
+        return clearAllNumericErrorTimersFromController(this);
+      },
+      evaluateNumericDraft(fieldKey, rawValue) {
+        return evaluateNumericDraftFromController(this, fieldKey, rawValue);
+      },
+      updateNumericDraft(fieldKey, value) {
+        return updateNumericDraftFromController(this, fieldKey, value);
+      },
+      commitNumericInput(fieldKey) {
+        return commitNumericInputFromController(this, fieldKey);
+      },
       async toggleSerialConnection() {
         await this.serialSession.toggleConnection();
       },
@@ -377,8 +613,7 @@ function createVueApp() {
         // 移除所有事件监听器
         document.removeEventListener('mousemove', this.handleMouseMove);
         document.removeEventListener('mouseup', this.handleMouseUp);
-        document.removeEventListener('mousemove', this.handleSliderMove);
-        document.removeEventListener('mouseup', this.handleSliderEnd);
+        cleanupCalibrationSliderFromController(this);
       },
 
       // ===== 绘图循环启动 =====
@@ -397,7 +632,83 @@ function createVueApp() {
         }
         return 0;
       },
-      
+      getCalibrationSliderKey(type, line) {
+        return type === 'time' ? 'time' : `volts-${line}`;
+      },
+      getCalibrationSliderValue(type, line) {
+        return type === 'time'
+          ? this.displayAdjustFactors.time
+          : this.displayAdjustFactors.volts[line];
+      },
+      setCalibrationSliderValue(type, line, nextValue) {
+        const clampedValue = WaveformUtilities.clamp(nextValue, 0.1, 2.0);
+
+        if (type === 'time') {
+          this.displayAdjustFactors.time = clampedValue;
+        } else {
+          this.displayAdjustFactors.volts[line] = clampedValue;
+        }
+
+        this.needsRedraw = true;
+        this.refreshDisplay();
+      },
+      getSliderFeedbackText(type, line) {
+        return this.getCalibrationSliderValue(type, line).toFixed(2);
+      },
+      isSliderFeedbackVisible(type, line) {
+        const sliderKey = this.getCalibrationSliderKey(type, line);
+        const activeKey = this.sliderActive
+          ? this.getCalibrationSliderKey(this.sliderActive.type, this.sliderActive.line)
+          : null;
+
+        return this.sliderHover === sliderKey || this.sliderFeedback === sliderKey || activeKey === sliderKey;
+      },
+      setSliderHover(type, line, hovering) {
+        this.sliderHover = hovering ? this.getCalibrationSliderKey(type, line) : null;
+      },
+      showSliderFeedback(type, line, duration = 900) {
+        const sliderKey = this.getCalibrationSliderKey(type, line);
+
+        if (this.sliderFeedbackTimers[sliderKey]) {
+          clearTimeout(this.sliderFeedbackTimers[sliderKey]);
+          delete this.sliderFeedbackTimers[sliderKey];
+        }
+
+        this.sliderFeedback = sliderKey;
+
+        if (duration > 0) {
+          this.sliderFeedbackTimers[sliderKey] = setTimeout(() => {
+            if (this.sliderFeedback === sliderKey) {
+              this.sliderFeedback = null;
+            }
+            delete this.sliderFeedbackTimers[sliderKey];
+          }, duration);
+        }
+      },
+      clearAllSliderFeedbackTimers() {
+        Object.keys(this.sliderFeedbackTimers || {}).forEach((sliderKey) => {
+          clearTimeout(this.sliderFeedbackTimers[sliderKey]);
+        });
+        this.sliderFeedbackTimers = {};
+        this.sliderFeedback = null;
+      },
+      updateCalibrationSliderFromClientX(type, line, clientX) {
+        if (!this.sliderTrackElement || typeof this.sliderTrackElement.getBoundingClientRect !== 'function') {
+          return;
+        }
+
+        const rect = this.sliderTrackElement.getBoundingClientRect();
+
+        if (!rect.width) {
+          return;
+        }
+
+        const normalized = WaveformUtilities.clamp((clientX - rect.left) / rect.width, 0, 1);
+        const nextValue = 0.1 + normalized * 1.9;
+
+        this.setCalibrationSliderValue(type, line, nextValue);
+      },
+
       // ===== 模式控制 =====
       switchMode(mode) {
         if (mode === 'lissajous') {
@@ -812,6 +1123,44 @@ function createVueApp() {
         document.removeEventListener('mousemove', this.handleSliderMove);
         document.removeEventListener('mouseup', this.handleSliderEnd);
       },
+      startSlider(type, line, event) {
+        if (event && typeof event.preventDefault === 'function') {
+          event.preventDefault();
+        }
+
+        this.sliderActive = { type, line };
+        this.sliderTrackElement = event?.currentTarget || null;
+        this.showSliderFeedback(type, line, 0);
+        this.updateCalibrationSliderFromClientX(type, line, event?.clientX ?? 0);
+
+        document.addEventListener('mousemove', this.handleSliderMove);
+        document.addEventListener('mouseup', this.handleSliderEnd);
+      },
+      handleSliderMove(event) {
+        if (!this.sliderActive) return;
+
+        const { type, line } = this.sliderActive;
+        this.updateCalibrationSliderFromClientX(type, line, event.clientX);
+      },
+      handleSliderWheel(type, line, event) {
+        event.preventDefault();
+
+        const currentValue = this.getCalibrationSliderValue(type, line);
+        const delta = event.deltaY < 0 ? 0.02 : -0.02;
+
+        this.setCalibrationSliderValue(type, line, currentValue + delta);
+        this.showSliderFeedback(type, line, 900);
+      },
+      handleSliderEnd() {
+        if (this.sliderActive) {
+          this.showSliderFeedback(this.sliderActive.type, this.sliderActive.line, 900);
+        }
+
+        this.sliderActive = null;
+        this.sliderTrackElement = null;
+        document.removeEventListener('mousemove', this.handleSliderMove);
+        document.removeEventListener('mouseup', this.handleSliderEnd);
+      },
       handleMouseMove(event) {
         // 当前仅处理非滑块相关的鼠标移动
         if (this.someOtherDragOperation) {
@@ -931,6 +1280,48 @@ function createVueApp() {
         }
       },
       // ===== 设置显示模式 =====
+      calculateSliderPosition(type, line) {
+        return calculateSliderPositionFromController(this, type, line);
+      },
+      getCalibrationSliderKey(type, line) {
+        return getCalibrationSliderKeyFromController(type, line);
+      },
+      getCalibrationSliderValue(type, line) {
+        return getCalibrationSliderValueFromController(this, type, line);
+      },
+      setCalibrationSliderValue(type, line, nextValue) {
+        return setCalibrationSliderValueFromController(this, type, line, nextValue);
+      },
+      getSliderFeedbackText(type, line) {
+        return getSliderFeedbackTextFromController(this, type, line);
+      },
+      isSliderFeedbackVisible(type, line) {
+        return isSliderFeedbackVisibleFromController(this, type, line);
+      },
+      setSliderHover(type, line, hovering) {
+        return setSliderHoverFromController(this, type, line, hovering);
+      },
+      showSliderFeedback(type, line, duration = 900) {
+        return showSliderFeedbackFromController(this, type, line, duration);
+      },
+      clearAllSliderFeedbackTimers() {
+        return clearAllSliderFeedbackTimersFromController(this);
+      },
+      updateCalibrationSliderFromClientX(type, line, clientX) {
+        return updateCalibrationSliderFromClientXFromController(this, type, line, clientX);
+      },
+      startSlider(type, line, event) {
+        return startCalibrationSliderFromController(this, type, line, event);
+      },
+      handleSliderMove(event) {
+        return handleCalibrationSliderMoveFromController(this, event);
+      },
+      handleSliderWheel(type, line, event) {
+        return handleCalibrationSliderWheelFromController(this, type, line, event);
+      },
+      handleSliderEnd() {
+        return handleCalibrationSliderEndFromController(this);
+      },
       setDisplayMode(mode) {
         if (['independent', 'overlay', 'vertical'].includes(mode)) {
           if (this.expStep === 'actual' && mode !== 'independent') {

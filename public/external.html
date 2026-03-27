@@ -104,75 +104,83 @@
                     <tr class="knob">
                       <td><label for="peak-ch1">峰峰值（Vpp）:</label></td>
                       <td>
-                        <input
-                          type="number"
-                          id="peak-ch1"
-                          name="peak-ch1"
-                          :value="expStep === 'calibration' ? calibrationParams.peakValues[1] : peakValues[1]"
-                          @input="e => expStep !== 'calibration' && $set(peakValues, 1, Number(e.target.value))"
-                          min="0.1"
-                          max="10"
-                          step="0.1"
-                          :disabled="expStep === 'calibration'"
-                        >
+                        <div class="numeric-input-stack">
+                          <input
+                            type="number"
+                            id="peak-ch1"
+                            name="peak-ch1"
+                            :value="inputDrafts.peak1"
+                            @focus="startNumericInput('peak1')"
+                            @input="updateNumericDraft('peak1', $event.target.value)"
+                            @blur="commitNumericInput('peak1')"
+                            @keydown.enter.prevent="commitNumericInput('peak1')"
+                            min="0.1"
+                            max="10"
+                            step="0.1"
+                            :disabled="expStep === 'calibration'"
+                          >
+                          <div v-if="inputErrors.peak1" class="numeric-input-error" :class="{ 'numeric-input-error--leaving': inputErrorLeaving.peak1 }">数值不合法</div>
+                        </div>
                       </td>
                       <td>
-                        <input
-                          type="number"
-                          id="peak-ch2"
-                          name="peak-ch2"
-                          :value="expStep === 'calibration' ? calibrationParams.peakValues[2] : peakValues[2]"
-                          @input="e => expStep !== 'calibration' && $set(peakValues, 2, Number(e.target.value))"
-                          min="0.1"
-                          max="10"
-                          step="0.1"
-                          :disabled="expStep === 'calibration'"
-                        >
+                        <div class="numeric-input-stack">
+                          <input
+                            type="number"
+                            id="peak-ch2"
+                            name="peak-ch2"
+                            :value="inputDrafts.peak2"
+                            @focus="startNumericInput('peak2')"
+                            @input="updateNumericDraft('peak2', $event.target.value)"
+                            @blur="commitNumericInput('peak2')"
+                            @keydown.enter.prevent="commitNumericInput('peak2')"
+                            min="0.1"
+                            max="10"
+                            step="0.1"
+                            :disabled="expStep === 'calibration'"
+                          >
+                          <div v-if="inputErrors.peak2" class="numeric-input-error" :class="{ 'numeric-input-error--leaving': inputErrorLeaving.peak2 }">数值不合法</div>
+                        </div>
                       </td>
                     </tr>
                     <tr class="knob">
                       <td><label for="freq-ch1">频率（Hz）:</label></td>
                       <td>
-                        <input
-                          type="number"
-                          id="freq-ch1"
-                          name="freq-ch1"
-                          :value="currentMode === 'lissajous' ? freqX : (expStep === 'calibration' ? calibrationParams.frequencies[1] : frequencies[1])"
-                          @input="e => {
-                            if (currentMode === 'lissajous') {
-                              freqX = Number(e.target.value);
-                              needsRedraw = true;
-                              refreshDisplay();
-                            } else if (expStep !== 'calibration') {
-                              $set(frequencies, 1, Number(e.target.value))
-                            }
-                          }"
-                          min="0.1"
-                          max="10"
-                          step="0.1"
-                          :disabled="expStep === 'calibration' && currentMode !== 'lissajous'"
-                        >
+                        <div class="numeric-input-stack">
+                          <input
+                            type="number"
+                            id="freq-ch1"
+                            name="freq-ch1"
+                            :value="inputDrafts.freq1"
+                            @focus="startNumericInput('freq1')"
+                            @input="updateNumericDraft('freq1', $event.target.value)"
+                            @blur="commitNumericInput('freq1')"
+                            @keydown.enter.prevent="commitNumericInput('freq1')"
+                            min="0.1"
+                            max="10"
+                            step="0.1"
+                            :disabled="expStep === 'calibration' && currentMode !== 'lissajous'"
+                          >
+                          <div v-if="inputErrors.freq1" class="numeric-input-error" :class="{ 'numeric-input-error--leaving': inputErrorLeaving.freq1 }">数值不合法</div>
+                        </div>
                       </td>
                       <td>
-                        <input
-                          type="number"
-                          id="freq-ch2"
-                          name="freq-ch2"
-                          :value="currentMode === 'lissajous' ? freqY : (expStep === 'calibration' ? calibrationParams.frequencies[2] : frequencies[2])"
-                          @input="e => {
-                            if (currentMode === 'lissajous') {
-                              freqY = Number(e.target.value);
-                              needsRedraw = true;
-                              refreshDisplay();
-                            } else if (expStep !== 'calibration') {
-                              $set(frequencies, 2, Number(e.target.value))
-                            }
-                          }"
-                          min="0.1"
-                          max="10"
-                          step="0.1"
-                          :disabled="expStep === 'calibration' && currentMode !== 'lissajous'"
-                        >
+                        <div class="numeric-input-stack">
+                          <input
+                            type="number"
+                            id="freq-ch2"
+                            name="freq-ch2"
+                            :value="inputDrafts.freq2"
+                            @focus="startNumericInput('freq2')"
+                            @input="updateNumericDraft('freq2', $event.target.value)"
+                            @blur="commitNumericInput('freq2')"
+                            @keydown.enter.prevent="commitNumericInput('freq2')"
+                            min="0.1"
+                            max="10"
+                            step="0.1"
+                            :disabled="expStep === 'calibration' && currentMode !== 'lissajous'"
+                          >
+                          <div v-if="inputErrors.freq2" class="numeric-input-error" :class="{ 'numeric-input-error--leaving': inputErrorLeaving.freq2 }">数值不合法</div>
+                        </div>
                       </td>
                     </tr>
                     <tr class="knob">
@@ -180,15 +188,22 @@
                       <td colspan="2">
                         <div class="phase-control">
                           <button @click="adjustParam('phaseDiff', -10)" aria-label="减小初相差" class="arrow-button">&#8592;</button>
-                          <input
-                            type="number"
-                            id="phase-diff-new"
-                            v-model.number="phaseDiff"
-                            min="0"
-                            max="360"
-                            step="5"
-                            @input="needsRedraw = true; refreshDisplay();"
-                          >
+                          <div class="numeric-input-stack">
+                            <input
+                              type="number"
+                              id="phase-diff-new"
+                              :value="inputDrafts.phaseDiff"
+                              @focus="startNumericInput('phaseDiff')"
+                              @input="updateNumericDraft('phaseDiff', $event.target.value)"
+                              @blur="commitNumericInput('phaseDiff')"
+                              @keydown.enter.prevent="commitNumericInput('phaseDiff')"
+                              min="0"
+                              max="360"
+                              step="0.1"
+                              aria-label="phase-diff"
+                            >
+                            <div v-if="inputErrors.phaseDiff" class="numeric-input-error" :class="{ 'numeric-input-error--leaving': inputErrorLeaving.phaseDiff }">数值不合法</div>
+                          </div>
                           <button @click="adjustParam('phaseDiff', 10)" aria-label="增加初相差" class="arrow-button">&#8594;</button>
                         </div>
                       </td>
@@ -255,27 +270,24 @@
                     <div class="reading-controls">
                       <button @click="currentMode==='lissajous'?adjustParam('freqX',-0.1):adjustParam('timeDiv',-1)">-</button>
 
-                      <input
-                        type="number"
-                        id="time-div"
-                        name="time-div"
-                        :value="currentMode==='lissajous'?freqX:timeDiv"
-                        @input="e => {
-                          if (currentMode === 'lissajous') {
-                            freqX = Number(e.target.value);
-                            needsRedraw = true;
-                            refreshDisplay();
-                          } else {
-                            timeDiv = Number(e.target.value);
-                          }
-                        }"
-                        @keydown.left="currentMode==='lissajous'?adjustParam('freqX',-0.1):adjustParam('timeDiv',-1)"
-                        @keydown.right="currentMode==='lissajous'?adjustParam('freqX',0.1):adjustParam('timeDiv',1)"
-                        @change="currentMode!=='lissajous' && validateInput('time')"
-                        min="0.1"
-                        max="100"
-                        step="0.1"
-                      >
+                      <div class="numeric-input-stack">
+                        <input
+                          type="number"
+                          id="time-div"
+                          name="time-div"
+                          :value="inputDrafts.timeDiv"
+                          @focus="startNumericInput('timeDiv')"
+                          @input="updateNumericDraft('timeDiv', $event.target.value)"
+                          @blur="commitNumericInput('timeDiv')"
+                          @keydown.enter.prevent="commitNumericInput('timeDiv')"
+                          @keydown.left="currentMode==='lissajous'?adjustParam('freqX',-0.1):adjustParam('timeDiv',-1)"
+                          @keydown.right="currentMode==='lissajous'?adjustParam('freqX',0.1):adjustParam('timeDiv',1)"
+                          min="0.1"
+                          max="100"
+                          step="0.1"
+                        >
+                        <div v-if="inputErrors.timeDiv" class="numeric-input-error" :class="{ 'numeric-input-error--leaving': inputErrorLeaving.timeDiv }">数值不合法</div>
+                      </div>
 
                       <button @click="currentMode==='lissajous'?adjustParam('freqX',0.1):adjustParam('timeDiv',1)">+</button>
                     </div>
@@ -288,7 +300,10 @@
                       <div class="slider-tooltip">波形显示微调</div>
                       <div
                         class="slider"
-                        @mousedown="startSlider('time', null)"
+                        @mousedown="startSlider('time', null, $event)"
+                        @mouseenter="setSliderHover('time', null, true)"
+                        @mouseleave="setSliderHover('time', null, false)"
+                        @wheel.prevent="handleSliderWheel('time', null, $event)"
                         :class="{ active: sliderActive && sliderActive.type === 'time' }"
                         :style="{ '--slider-value': calculateSliderPosition('time') }"
                         role="slider"
@@ -296,6 +311,7 @@
                         aria-valuemax="2.0"
                         :aria-valuenow="displayAdjustFactors.time"
                       ></div>
+                      <div v-if="isSliderFeedbackVisible('time', null)" class="slider-feedback">{{ getSliderFeedbackText('time', null) }}x</div>
                     </div>
                   </td>
                 </tr>
@@ -305,25 +321,24 @@
                   <td class="control-group">
                     <div class="reading-controls">
                       <button @click="adjustParam('voltsDiv', -0.1, 1)">-</button>
-                      <input
-                        type="number"
-                        id="volts-div-1"
-                        name="volts-div-1"
-                        :value="voltsDiv[1]"
-                        @input="e => {
-                          voltsDiv[1] = Number(e.target.value);
-                          if (displayMode === 'vertical') {
-                            needsRedraw = true;
-                            validateInput('volts', 1);
-                          }
-                        }"
-                        @keydown.left="adjustParam('voltsDiv', -0.1, 1)"
-                        @keydown.right="adjustParam('voltsDiv', 0.1, 1)"
-                        @change="validateInput('volts', 1)"
-                        min="0.1"
-                        max="10"
-                        step="0.01"
-                      >
+                      <div class="numeric-input-stack">
+                        <input
+                          type="number"
+                          id="volts-div-1"
+                          name="volts-div-1"
+                          :value="inputDrafts.volts1"
+                          @focus="startNumericInput('volts1')"
+                          @input="updateNumericDraft('volts1', $event.target.value)"
+                          @blur="commitNumericInput('volts1')"
+                          @keydown.enter.prevent="commitNumericInput('volts1')"
+                          @keydown.left="adjustParam('voltsDiv', -0.1, 1)"
+                          @keydown.right="adjustParam('voltsDiv', 0.1, 1)"
+                          min="0.1"
+                          max="10"
+                          step="0.01"
+                        >
+                        <div v-if="inputErrors.volts1" class="numeric-input-error" :class="{ 'numeric-input-error--leaving': inputErrorLeaving.volts1 }">数值不合法</div>
+                      </div>
                       <button @click="adjustParam('voltsDiv', 0.1, 1)">+</button>
                     </div>
                   </td>
@@ -335,7 +350,10 @@
                       <div class="slider-tooltip">波形显示微调</div>
                       <div
                         class="slider"
-                        @mousedown="startSlider('volts', 1)"
+                        @mousedown="startSlider('volts', 1, $event)"
+                        @mouseenter="setSliderHover('volts', 1, true)"
+                        @mouseleave="setSliderHover('volts', 1, false)"
+                        @wheel.prevent="handleSliderWheel('volts', 1, $event)"
                         :class="{ active: sliderActive && sliderActive.type === 'volts' && sliderActive.line === 1 }"
                         :style="{ '--slider-value': calculateSliderPosition('volts', 1) }"
                         role="slider"
@@ -343,6 +361,7 @@
                         aria-valuemin="0.1"
                         aria-valuemax="2.0"
                       ></div>
+                      <div v-if="isSliderFeedbackVisible('volts', 1)" class="slider-feedback">{{ getSliderFeedbackText('volts', 1) }}x</div>
                     </div>
                   </td>
                 </tr>
@@ -352,25 +371,24 @@
                   <td class="control-group">
                     <div class="reading-controls">
                       <button @click="adjustParam('voltsDiv', -0.1, 2)">-</button>
-                      <input
-                        type="number"
-                        id="volts-div-2"
-                        name="volts-div-2"
-                        :value="voltsDiv[2]"
-                        @input="e => {
-                          voltsDiv[2] = Number(e.target.value);
-                          if (displayMode === 'vertical') {
-                            needsRedraw = true;
-                            validateInput('volts', 2);
-                          }
-                        }"
-                        @keydown.left="adjustParam('voltsDiv', -0.1, 2)"
-                        @keydown.right="adjustParam('voltsDiv', 0.1, 2)"
-                        @change="validateInput('volts', 2)"
-                        min="0.1"
-                        max="10"
-                        step="0.01"
-                      >
+                      <div class="numeric-input-stack">
+                        <input
+                          type="number"
+                          id="volts-div-2"
+                          name="volts-div-2"
+                          :value="inputDrafts.volts2"
+                          @focus="startNumericInput('volts2')"
+                          @input="updateNumericDraft('volts2', $event.target.value)"
+                          @blur="commitNumericInput('volts2')"
+                          @keydown.enter.prevent="commitNumericInput('volts2')"
+                          @keydown.left="adjustParam('voltsDiv', -0.1, 2)"
+                          @keydown.right="adjustParam('voltsDiv', 0.1, 2)"
+                          min="0.1"
+                          max="10"
+                          step="0.01"
+                        >
+                        <div v-if="inputErrors.volts2" class="numeric-input-error" :class="{ 'numeric-input-error--leaving': inputErrorLeaving.volts2 }">数值不合法</div>
+                      </div>
                       <button @click="adjustParam('voltsDiv', 0.1, 2)">+</button>
                     </div>
                   </td>
@@ -382,7 +400,10 @@
                       <div class="slider-tooltip">波形显示微调</div>
                       <div
                         class="slider"
-                        @mousedown="startSlider('volts', 2)"
+                        @mousedown="startSlider('volts', 2, $event)"
+                        @mouseenter="setSliderHover('volts', 2, true)"
+                        @mouseleave="setSliderHover('volts', 2, false)"
+                        @wheel.prevent="handleSliderWheel('volts', 2, $event)"
                         :class="{ active: sliderActive && sliderActive.type === 'volts' && sliderActive.line === 2 }"
                         :style="{ '--slider-value': calculateSliderPosition('volts', 2) }"
                         role="slider"
@@ -390,6 +411,7 @@
                         aria-valuemin="0.1"
                         aria-valuemax="2.0"
                       ></div>
+                      <div v-if="isSliderFeedbackVisible('volts', 2)" class="slider-feedback">{{ getSliderFeedbackText('volts', 2) }}x</div>
                     </div>
                   </td>
                 </tr>
@@ -469,16 +491,23 @@
                     <label for="trigger-level">触发电平:</label>
                     <div class="level-knob">
                       <button @click="adjustLevel(-0.1)" aria-label="减小触发电平">-</button>
-                      <input
-                        type="number"
-                        id="trigger-level"
-                        name="trigger-level"
-                        v-model.number="triggerLevel"
-                        min="-5"
-                        max="5"
-                        step="0.1"
-                        aria-label="触发电平值"
-                      >
+                      <div class="numeric-input-stack">
+                        <input
+                          type="number"
+                          id="trigger-level"
+                          name="trigger-level"
+                          :value="inputDrafts.triggerLevel"
+                          @focus="startNumericInput('triggerLevel')"
+                          @input="updateNumericDraft('triggerLevel', $event.target.value)"
+                          @blur="commitNumericInput('triggerLevel')"
+                          @keydown.enter.prevent="commitNumericInput('triggerLevel')"
+                          min="-5"
+                          max="5"
+                          step="0.1"
+                          aria-label="触发电平值"
+                        >
+                        <div v-if="inputErrors.triggerLevel" class="numeric-input-error" :class="{ 'numeric-input-error--leaving': inputErrorLeaving.triggerLevel }">数值不合法</div>
+                      </div>
                       <button @click="adjustLevel(0.1)" aria-label="增加触发电平">+</button>
                     </div>
                   </div>
