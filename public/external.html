@@ -18,7 +18,7 @@
       <div class="exp-steps">
         <button @click="setExpStep('calibration')" :class="{ active: expStep === 'calibration' }">1. 自检校准</button>
         <button id="normal-mode-btn" @click="setExpStep('normal')" :class="{ active: expStep === 'normal' }">2. 标准测量</button>
-        <button @click="setExpStep('actual')" :class="{ active: expStep === 'actual' }">3. 实际测量</button>
+        <button v-if="showActualMeasurement" @click="setExpStep('actual')" :class="{ active: expStep === 'actual' }">3. 实际测量</button>
       </div>
     </header>
 
@@ -213,7 +213,7 @@
               </div>
             </section>
 
-            <section class="serial-input-section" v-if="expStep === 'actual'">
+            <section class="serial-input-section" v-if="showActualMeasurement && expStep === 'actual'">
               <h3>硬件输入</h3>
               <div class="serial-connection-row">
                 <button
