@@ -23,7 +23,7 @@
     </header>
 
     <!-- 主内容 -->
-    <main>
+    <main ref="layoutMain">
       <!-- 控制面板 -->
       <aside>
         <!-- 自检校准模式 -->
@@ -525,6 +525,14 @@
       </aside>
 
       <!-- 示波器显示区 -->
+      <div
+        class="layout-resizer"
+        ref="layoutResizer"
+        @pointerdown="handleLayoutResizeStart"
+        aria-label="调整左侧控制面板宽度"
+        aria-orientation="vertical"
+        role="separator"
+      ></div>
       <section class="oscilloscope">
         <canvas ref="oscilloscope" width="800" height="400"></canvas>
       </section>

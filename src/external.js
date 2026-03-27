@@ -75,6 +75,15 @@ const APP_CONFIG = {
     voltsDiv: { 1: 1, 2: 1 },
     peakValues: { 1: 1, 2: 1 },
     frequencies: { 1: 1, 2: 1 }
+  },
+  layout: {
+    storageKey: 'externalAsideWidth',
+    defaultAsideWidth: 380,
+    desktopMinWidth: 320,
+    desktopMaxWidth: 520,
+    compactDefaultWidth: 340,
+    compactMinWidth: 320,
+    compactMaxWidth: 420
   }
 };
 
@@ -349,6 +358,12 @@ function createVueApp() {
       ...createCalibrationSliderState(),
       inputMode: 'simulation',
       serial: createSerialState(),
+      asideWidth: APP_CONFIG.layout.defaultAsideWidth,
+      layoutResizeActive: false,
+      layoutResizePendingWidth: null,
+      layoutResizeFrameId: null,
+      layoutResizePointerId: null,
+      layoutResizeResizer: null,
     },
     created() {
       this.serialSession = createSerialSession(this);
@@ -359,6 +374,7 @@ function createVueApp() {
     mounted() {
       try {
         this.initCanvas();
+        this.initLayoutResizer();
         this.syncAllNumericDrafts({ force: true });
         this.initEventListeners();
         this.startDrawLoop();
@@ -370,6 +386,7 @@ function createVueApp() {
     beforeDestroy() {
       this.clearAllNumericErrorTimers();
       this.clearAllSliderFeedbackTimers();
+      this.cleanupLayoutResizer();
       this.cleanup();
     },
     computed: {
@@ -597,9 +614,283 @@ function createVueApp() {
       initEventListeners() {
         document.addEventListener('mousemove', this.handleMouseMove);
         document.addEventListener('mouseup', this.handleMouseUp);
+        window.addEventListener('resize', this.handleLayoutViewportChange);
       },
 
       // ===== 清理函数 =====
+      getLayoutResizeRange() {
+        if (typeof window === 'undefined') {
+          return null;
+        }
+
+        if (window.innerWidth <= 768) {
+          return null;
+        }
+
+        if (window.innerWidth <= 959) {
+          return {
+            min: APP_CONFIG.layout.compactMinWidth,
+            max: APP_CONFIG.layout.compactMaxWidth,
+            defaultWidth: APP_CONFIG.layout.compactDefaultWidth
+          };
+        }
+
+        return {
+          min: APP_CONFIG.layout.desktopMinWidth,
+          max: APP_CONFIG.layout.desktopMaxWidth,
+          defaultWidth: this.getDefaultDesktopAsideWidth()
+        };
+      },
+
+      getDefaultDesktopAsideWidth() {
+        if (typeof window === 'undefined') {
+          return APP_CONFIG.layout.defaultAsideWidth;
+        }
+
+        if (window.innerWidth >= 2560 && window.innerHeight >= 1440) {
+          return 400;
+        }
+
+        if (window.innerWidth >= 1920 || window.innerHeight >= 1080) {
+          return 390;
+        }
+
+        return APP_CONFIG.layout.defaultAsideWidth;
+      },
+
+      getStoredAsideWidth() {
+        try {
+          const rawValue = window.localStorage.getItem(APP_CONFIG.layout.storageKey);
+          if (!rawValue) {
+            return null;
+          }
+
+          const parsedValue = Number(rawValue);
+          return Number.isFinite(parsedValue) ? parsedValue : null;
+        } catch (error) {
+          console.warn('Failed to read saved aside width:', error);
+          return null;
+        }
+      },
+
+      persistAsideWidth(width) {
+        try {
+          window.localStorage.setItem(APP_CONFIG.layout.storageKey, `${width}`);
+        } catch (error) {
+          console.warn('Failed to persist aside width:', error);
+        }
+      },
+
+      applyAsideWidth(width, { persist = false } = {}) {
+        const range = this.getLayoutResizeRange();
+        const layoutMain = this.$refs.layoutMain;
+
+        if (!layoutMain || !range) {
+          return;
+        }
+
+        const clampedWidth = WaveformUtilities.clamp(width, range.min, range.max);
+        this.asideWidth = clampedWidth;
+        layoutMain.style.setProperty('--aside-width', `${clampedWidth}px`);
+
+        if (persist) {
+          this.persistAsideWidth(clampedWidth);
+        }
+      },
+
+      initLayoutResizer() {
+        const layoutMain = this.$refs.layoutMain;
+
+        if (!layoutMain) {
+          return;
+        }
+
+        const range = this.getLayoutResizeRange();
+        if (!range) {
+          layoutMain.style.removeProperty('--aside-width');
+          return;
+        }
+
+        const savedWidth = this.getStoredAsideWidth();
+        const nextWidth = Number.isFinite(savedWidth) ? savedWidth : range.defaultWidth;
+        this.applyAsideWidth(nextWidth);
+      },
+
+      handleLayoutViewportChange() {
+        const layoutMain = this.$refs.layoutMain;
+        const range = this.getLayoutResizeRange();
+
+        if (!layoutMain) {
+          return;
+        }
+
+        if (!range) {
+          this.cleanupLayoutResize();
+          layoutMain.style.removeProperty('--aside-width');
+          return;
+        }
+
+        const sourceWidth = Number.isFinite(this.asideWidth)
+          ? this.asideWidth
+          : (this.getStoredAsideWidth() ?? range.defaultWidth);
+
+        this.applyAsideWidth(sourceWidth);
+      },
+
+      handleLayoutResizeStart(event) {
+        if (!this.getLayoutResizeRange() || event.button !== 0) {
+          return;
+        }
+
+        const resizerElement = event.currentTarget || this.$refs.layoutResizer;
+        if (!resizerElement) {
+          return;
+        }
+
+        event.preventDefault();
+        this.cleanupLayoutResize();
+        this.layoutResizeActive = true;
+        this.layoutResizePointerId = event.pointerId;
+        this.layoutResizeResizer = resizerElement;
+        document.body.classList.add('aside-resizing');
+
+        if (typeof resizerElement.setPointerCapture === 'function') {
+          try {
+            resizerElement.setPointerCapture(event.pointerId);
+          } catch (error) {
+            console.warn('Failed to capture pointer for layout resize:', error);
+          }
+        }
+
+        resizerElement.addEventListener('pointermove', this.handleLayoutResizeMove);
+        resizerElement.addEventListener('pointerup', this.handleLayoutResizeEnd);
+        resizerElement.addEventListener('pointercancel', this.handleLayoutResizeEnd);
+        resizerElement.addEventListener('lostpointercapture', this.handleLayoutResizeEnd);
+
+        this.queueLayoutResize(event.clientX, { flush: true });
+      },
+
+      queueLayoutResize(clientX, { flush = false } = {}) {
+        if (!this.layoutResizeActive) {
+          return;
+        }
+
+        const layoutMain = this.$refs.layoutMain;
+        if (!layoutMain) {
+          return;
+        }
+
+        const rect = layoutMain.getBoundingClientRect();
+        this.layoutResizePendingWidth = clientX - rect.left;
+
+        if (flush) {
+          this.flushLayoutResize();
+          return;
+        }
+
+        if (this.layoutResizeFrameId !== null) {
+          return;
+        }
+
+        this.layoutResizeFrameId = requestAnimationFrame(() => {
+          this.layoutResizeFrameId = null;
+          this.flushLayoutResize();
+        });
+      },
+
+      flushLayoutResize() {
+        if (!this.layoutResizeActive || !Number.isFinite(this.layoutResizePendingWidth)) {
+          return;
+        }
+
+        this.applyAsideWidth(this.layoutResizePendingWidth);
+        this.layoutResizePendingWidth = null;
+      },
+
+      handleLayoutResizeMove(event) {
+        if (!this.layoutResizeActive || event.pointerId !== this.layoutResizePointerId) {
+          return;
+        }
+
+        this.queueLayoutResize(event.clientX);
+      },
+
+      handleLayoutResizeEnd(event) {
+        if (!this.layoutResizeActive) {
+          return;
+        }
+
+        if (event && event.pointerId != null && event.pointerId !== this.layoutResizePointerId) {
+          return;
+        }
+
+        this.flushLayoutResize();
+
+        const resizerElement = this.layoutResizeResizer;
+        const pointerId = this.layoutResizePointerId;
+
+        if (this.layoutResizeFrameId !== null) {
+          cancelAnimationFrame(this.layoutResizeFrameId);
+          this.layoutResizeFrameId = null;
+        }
+
+        this.layoutResizeActive = false;
+        this.layoutResizePendingWidth = null;
+        this.layoutResizePointerId = null;
+        this.layoutResizeResizer = null;
+        document.body.classList.remove('aside-resizing');
+
+        if (resizerElement) {
+          resizerElement.removeEventListener('pointermove', this.handleLayoutResizeMove);
+          resizerElement.removeEventListener('pointerup', this.handleLayoutResizeEnd);
+          resizerElement.removeEventListener('pointercancel', this.handleLayoutResizeEnd);
+          resizerElement.removeEventListener('lostpointercapture', this.handleLayoutResizeEnd);
+
+          if (pointerId != null && typeof resizerElement.hasPointerCapture === 'function' && resizerElement.hasPointerCapture(pointerId)) {
+            try {
+              resizerElement.releasePointerCapture(pointerId);
+            } catch (error) {
+              console.warn('Failed to release pointer capture for layout resize:', error);
+            }
+          }
+        }
+
+        if (Number.isFinite(this.asideWidth)) {
+          this.persistAsideWidth(this.asideWidth);
+        }
+      },
+
+      cleanupLayoutResize() {
+        if (this.layoutResizeFrameId !== null) {
+          cancelAnimationFrame(this.layoutResizeFrameId);
+          this.layoutResizeFrameId = null;
+        }
+
+        const resizerElement = this.layoutResizeResizer;
+        const pointerId = this.layoutResizePointerId;
+
+        this.layoutResizeActive = false;
+        this.layoutResizePendingWidth = null;
+        this.layoutResizePointerId = null;
+        this.layoutResizeResizer = null;
+        document.body.classList.remove('aside-resizing');
+
+        if (resizerElement) {
+          resizerElement.removeEventListener('pointermove', this.handleLayoutResizeMove);
+          resizerElement.removeEventListener('pointerup', this.handleLayoutResizeEnd);
+          resizerElement.removeEventListener('pointercancel', this.handleLayoutResizeEnd);
+          resizerElement.removeEventListener('lostpointercapture', this.handleLayoutResizeEnd);
+
+          if (pointerId != null && typeof resizerElement.hasPointerCapture === 'function' && resizerElement.hasPointerCapture(pointerId)) {
+            try {
+              resizerElement.releasePointerCapture(pointerId);
+            } catch (error) {
+              console.warn('Failed to release pointer capture during layout cleanup:', error);
+            }
+          }
+        }
+      },
+
       cleanup() {
         // 取消动画帧
         if (this.animationId) {
@@ -613,6 +904,8 @@ function createVueApp() {
         // 移除所有事件监听器
         document.removeEventListener('mousemove', this.handleMouseMove);
         document.removeEventListener('mouseup', this.handleMouseUp);
+        window.removeEventListener('resize', this.handleLayoutViewportChange);
+        this.cleanupLayoutResize();
         cleanupCalibrationSliderFromController(this);
       },
 

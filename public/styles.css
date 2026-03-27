@@ -22,22 +22,75 @@ header {
 }
 
 main {
+  --aside-width: 380px;
+  --layout-resizer-size: 4px;
   display: flex;
+  flex-direction: row;
   height: calc(100vh - 180px);
   position: relative; /* 为主内容添加相对定位 */
   width: 100%; /* 确保宽度一致 */
 }
 
 aside {
-  width: 28%;  /* 改为百分比宽度 */
-  min-width: 320px;
-  max-width: 500px;
+  min-width: var(--aside-width);
+  max-width: var(--aside-width);
+  flex: 0 0 var(--aside-width);
+  width: var(--aside-width);
   background: white;
   box-shadow: none;
-  border-right: 1px solid #d8e1ea;
   overflow-y: auto;
   max-height: calc(100vh - 120px);
-  transition: all 0.3s ease;
+  transition: background-color 0.18s ease, border-color 0.18s ease;
+}
+
+.layout-resizer {
+  position: relative;
+  flex: 0 0 var(--layout-resizer-size);
+  width: var(--layout-resizer-size);
+  cursor: col-resize;
+  background: transparent;
+  user-select: none;
+  touch-action: none;
+  will-change: transform, opacity;
+  contain: layout style paint;
+}
+
+.layout-resizer::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 1px;
+  transform: translateX(-50%) scaleY(0.96);
+  transform-origin: center;
+  background: rgba(180, 194, 208, 0.55);
+  opacity: 0.22;
+  transition: transform 0.14s ease, opacity 0.14s ease, background-color 0.14s ease, width 0.14s ease;
+  will-change: transform, opacity;
+}
+
+.layout-resizer:hover::before,
+body.aside-resizing .layout-resizer::before {
+  background: #4c93d6;
+  opacity: 1;
+  width: 4px;
+  transform: translateX(-50%) scaleY(1);
+}
+
+body.aside-resizing {
+  cursor: col-resize;
+  user-select: none;
+}
+
+body.aside-resizing aside,
+body.aside-resizing .control-panel,
+body.aside-resizing .calibration-panel,
+body.aside-resizing .serial-input-section,
+body.aside-resizing .display-mode-switcher,
+body.aside-resizing .trigger-section,
+body.aside-resizing .time-voltage-section {
+  transition: none !important;
 }
 
 /* 为Webkit浏览器（Chrome/Safari/Edge）自定义滚动条样式 */
@@ -401,6 +454,7 @@ input[type="number"] {
 /* 示波器显示区样式 */
 .oscilloscope {
   flex: 1;
+  min-width: 0;
   background: #1a1a1a;
   display: flex;
   align-items: center;
@@ -1282,6 +1336,10 @@ input:disabled {
   body {
     font-size: 16px;
   }
+
+  main {
+    --aside-width: 400px;
+  }
   
   /* 控制面板在2K分辨率下的优化 */
   .control-panel {
@@ -1292,9 +1350,10 @@ input:disabled {
   }
   
   aside {
-    width: 30%;
-    min-width: 380px;
-    max-width: 550px;
+    width: var(--aside-width);
+    min-width: var(--aside-width);
+    max-width: var(--aside-width);
+    flex-basis: var(--aside-width);
   }
   
   button {
@@ -1348,6 +1407,10 @@ input:disabled {
 /* 标准FHD分辨率 (1920*1080) */
 @media screen and (max-width: 2559px) and (min-width: 1920px), 
        screen and (max-height: 1439px) and (min-height: 1080px) {
+  main {
+    --aside-width: 390px;
+  }
+
   .control-panel {
     padding: 1.2rem;
     margin-bottom: 18px;
@@ -1356,9 +1419,10 @@ input:disabled {
   }
   
   aside {
-    width: 29%;
-    min-width: 350px;
-    max-width: 500px;
+    width: var(--aside-width);
+    min-width: var(--aside-width);
+    max-width: var(--aside-width);
+    flex-basis: var(--aside-width);
   }
   
   .exp-steps button {
@@ -1390,6 +1454,10 @@ input:disabled {
 
 /* 中等分辨率 (1366*768, 1600*900) */
 @media screen and (max-width: 1919px) and (min-width: 1366px) {
+  main {
+    --aside-width: 380px;
+  }
+
   .control-panel {
     padding: 1rem;
     margin-bottom: 15px;
@@ -1398,9 +1466,10 @@ input:disabled {
   }
   
   aside {
-    width: 28%;
-    min-width: 320px;
-    max-width: 450px;
+    width: var(--aside-width);
+    min-width: var(--aside-width);
+    max-width: var(--aside-width);
+    flex-basis: var(--aside-width);
   }
   
   .exp-steps button {
@@ -1447,21 +1516,24 @@ input:disabled {
 }
 
 /* 控制面板响应式布局 - 中小屏幕 */
-@media screen and (max-width: 1365px) {
+@media screen and (max-width: 959px) and (min-width: 769px) {
   main {
-    flex-direction: column;
+    --aside-width: 340px;
+    flex-direction: row;
   }
 
   aside {
-    width: 100%;
-    max-width: none;
-    max-height: none;
+    width: var(--aside-width);
+    min-width: var(--aside-width);
+    max-width: var(--aside-width);
+    flex-basis: var(--aside-width);
+    max-height: calc(100vh - 120px);
     height: auto;
   }
 
   .control-panel {
-    max-width: 800px;
-    margin: 0 auto;
+    max-width: none;
+    margin: 0 0 12px 0;
     padding: 0.8rem;
     min-height: 350px;
     font-size: 12px;
@@ -1471,13 +1543,13 @@ input:disabled {
   .signal-source-controls {
     justify-content: center;
     flex-wrap: wrap;
-    gap: 15px;
+    gap: 12px;
   }
 
   /* 参数控制表格响应式 */
   .parameter-control table {
-    max-width: 600px;
-    margin: 0 auto;
+    max-width: 100%;
+    margin: 0;
   }
   
   .exp-steps button {
@@ -1488,7 +1560,7 @@ input:disabled {
   
   .slider-container {
     width: 250px;
-    margin-left: 20px;
+    margin-left: 16px;
   }
   
   .slider {
@@ -1505,6 +1577,23 @@ input:disabled {
 }
 
 @media screen and (max-width: 768px) {
+  main {
+    flex-direction: column;
+  }
+
+  .layout-resizer {
+    display: none;
+  }
+
+  aside {
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+    flex-basis: auto;
+    max-height: none;
+    height: auto;
+  }
+
   .control-panel {
     padding: 0.7rem;
     margin-bottom: 12px;
