@@ -1,4 +1,4 @@
-// ===== 基础导入 =====
+﻿// ===== 基础导入 =====
 import * as THREE from 'three'; // 三维库
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'; // 轨道控制器
 import * as TWEEN from '@tweenjs/tween.js'; // 动画库
@@ -9,16 +9,9 @@ import { renderSwitcher } from '../src/widgets/switcher.js';
 
 // ===== 导入自定义模块 =====
 import { CONFIG } from './configLoader';
-import { ConnectionPositionDemo } from './examples/ConnectionPositionDemo.js';
-import { SuperellipseTransitionDemo } from './examples/SuperellipseTransitionDemo.js';  // 配置文件
-import { GuiController } from './controllers/GuiController';  // GUI控制器
-import { UIController } from './controllers/UIController';  // UI控制器
 import { WaveformGenerator } from './components/WaveformGenerator';  // 波形生成器
 import { ElectronBeam } from './components/ElectronBeam';  // 电子束
 import { Screen } from './components/Screen';  // 荧光屏
-import { LabelSystem } from './components/LabelSystem';  // 标签系统
-import { ExplodedView } from './components/ExplodedView';  // 分解视图
-import { DemoAnimation } from './components/DemoAnimation';  // 演示动画
 import { CRTShell } from './components/CRTShell';  // CRT外壳
 import { MaterialManager } from './materials/MaterialManager';  // 材质管理器
 import { unifiedComponentMaterial } from './materials/UnifiedComponentMaterial.js';  // 统一组件材质管理器
@@ -251,44 +244,44 @@ function scheduleDeferredUiInitialization() {
   const deferredTasks = [
     {
       name: 'label system',
-      run: () => {
+      run: async () => {
         console.log('初始化标签系统...');
-        initLabelSystem();
+        await initLabelSystem();
       },
     },
     {
       name: 'exploded view',
-      run: () => {
+      run: async () => {
         console.log('初始化分解视图...');
-        initExplodedView();
+        await initExplodedView();
       },
     },
     {
       name: 'gui',
-      run: () => {
+      run: async () => {
         console.log('初始化GUI...');
-        initGui();
+        await initGui();
       },
     },
     {
       name: 'demo animation',
-      run: () => {
+      run: async () => {
         console.log('初始化演示动画...');
-        initDemoAnimation();
+        await initDemoAnimation();
       },
     },
-  {
+    {
       name: 'ui controller',
-      run: () => {
+      run: async () => {
         console.log('初始化UI控制器...');
-        initUIController();
+        await initUIController();
       },
     },
     {
       name: 'examples',
-      run: () => {
+      run: async () => {
         console.log('初始化演示示例...');
-        initDeferredExamples();
+        await initDeferredExamples();
       },
     },
   ];
@@ -301,14 +294,18 @@ function scheduleDeferredUiInitialization() {
       return;
     }
 
-    scheduleDeferred(() => {
+    scheduleDeferred(async () => {
       const task = deferredTasks[index];
       const taskStart = performance.now();
-      task.run();
-      console.log(
-        `[internal:perf] deferred ${task.name} ready in ${(performance.now() - taskStart).toFixed(1)}ms`
-      );
-      runTask(index + 1);
+      try {
+        await task.run();
+        console.log(
+          `[internal:perf] deferred ${task.name} ready in ${(performance.now() - taskStart).toFixed(1)}ms`
+        );
+        runTask(index + 1);
+      } catch (error) {
+        console.error(`[internal:perf] deferred ${task.name} failed`, error);
+      }
     });
   };
 
@@ -401,13 +398,21 @@ function initComponents() {
   
 }
 
-function initDeferredExamples() {
+async function initDeferredExamples() {
+  const [
+    { ConnectionPositionDemo },
+    { SuperellipseTransitionDemo },
+  ] = await Promise.all([
+    import('./examples/ConnectionPositionDemo.js'),
+    import('./examples/SuperellipseTransitionDemo.js'),
+  ]);
   window.connectionDemo = new ConnectionPositionDemo(crtShell);
   window.transitionDemo = new SuperellipseTransitionDemo(crtShell);
 }
 
 // ===== 标签系统初始化 =====
-function initLabelSystem() {
+async function initLabelSystem() {
+  const { LabelSystem } = await import('./components/LabelSystem');
   // 创建标签系统
   labelSystem = new LabelSystem(scene, document.body);
   
@@ -429,7 +434,8 @@ function initLabelSystem() {
 }
 
 // ===== 分解视图初始化 =====
-function initExplodedView() {
+async function initExplodedView() {
+  const { ExplodedView } = await import('./components/ExplodedView');
   // 创建分解视图控制器
   // 注意：这些组件不参与分解动画，但需要引用以支持相机聚焦功能
   explodedView = new ExplodedView({
@@ -447,7 +453,8 @@ function initExplodedView() {
 }
 
 // ===== 演示动画初始化 =====
-function initDemoAnimation() {
+async function initDemoAnimation() {
+  const { DemoAnimation } = await import('./components/DemoAnimation');
   // 创建演示动画控制器
   demoAnimation = new DemoAnimation(
     scene,
@@ -513,7 +520,8 @@ function initDemoAnimation() {
 }
 
 // ===== GUI初始化 =====
-function initGui() {
+async function initGui() {
+  const { GuiController } = await import('./controllers/GuiController');
   guiController = new GuiController({
     onBeamChange: (beamParams) => {
       electronBeam.updateMaterial();
@@ -605,7 +613,8 @@ function initGui() {
 }
 
 // ===== UI控制器初始化 =====
-function initUIController() {
+async function initUIController() {
+  const { UIController } = await import('./controllers/UIController');
   // 创建UI控制器
   uiController = new UIController({
     components: {
