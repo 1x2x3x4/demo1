@@ -6,6 +6,7 @@ const TerserPlugin = require('terser-webpack-plugin');
 const CssMinimizerPlugin = require('css-minimizer-webpack-plugin');
 
 const isDev = process.env.NODE_ENV !== 'production';
+const devServerPort = process.env.DEV_SERVER_PORT ? Number(process.env.DEV_SERVER_PORT) : 'auto';
 
 module.exports = {
   mode: isDev ? 'development' : 'production',
@@ -28,11 +29,12 @@ module.exports = {
       { directory: path.resolve(__dirname, 'public') },
       { directory: path.resolve(__dirname, 'CDN') },
     ],
+    host: '127.0.0.1',
     hot: true,
     liveReload: true,
     watchFiles: ['src/**/*', 'public/**/*'],
     open: ['index.html'],
-    port: 8081,
+    port: devServerPort,
     compress: true,
     historyApiFallback: true,
   },

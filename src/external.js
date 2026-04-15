@@ -313,7 +313,7 @@ function createVueApp() {
       lastCapturedFrame: null,
       // 实验步骤控制
       expStep: 'calibration', // 'calibration', 'normal', 'actual'
-      showActualMeasurement: false, //是否放开第三个界面
+      showActualMeasurement: true, //是否放开第三个界面
       calibrationFactor: APP_CONFIG.defaultValues.calibrationFactor, // 校准系数，1.0为标准校准
 
       // 自检模式专用数据 - 调整频率单位表示

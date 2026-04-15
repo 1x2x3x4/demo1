@@ -4,6 +4,12 @@ const path = require('path');
 
 let mainWindow;
 let serialHandlersInstalled = false;
+const devServerPort = process.env.DEV_SERVER_PORT || '8081';
+const trustedDevOrigins = new Set([
+  `http://localhost:${devServerPort}`,
+  `http://127.0.0.1:${devServerPort}`,
+  `http://[::1]:${devServerPort}`,
+]);
 
 function isTrustedSerialOrigin(origin) {
   if (!origin || origin === 'null') {
@@ -14,9 +20,7 @@ function isTrustedSerialOrigin(origin) {
     const parsedOrigin = new URL(origin);
     return (
       parsedOrigin.protocol === 'file:' ||
-      parsedOrigin.origin === 'http://localhost:8081' ||
-      parsedOrigin.origin === 'http://127.0.0.1:8081' ||
-      parsedOrigin.origin === 'http://[::1]:8081'
+      trustedDevOrigins.has(parsedOrigin.origin)
     );
   } catch (error) {
     return false;
@@ -77,7 +81,7 @@ function configureSerialPermissions() {
 
 function resolveStartTarget() {
   if (process.env.NODE_ENV === 'development') {
-    return { type: 'url', value: 'http://localhost:8081' };
+    return { type: 'url', value: `http://127.0.0.1:${devServerPort}` };
   }
 
   if (app.isPackaged) {
