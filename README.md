@@ -18,16 +18,16 @@
 
 主要入口与关键文件：
 
-- 2D 页面入口：demo1\src\external.js
-- 3D 页面入口：[C:\Users\ASUS\Desktop\demo1\src\main.js](C:\Users\ASUS\Desktop\demo1\src\main.js)
-- Electron 主进程：[C:\Users\ASUS\Desktop\demo1\electron-main.js](C:\Users\ASUS\Desktop\demo1\electron-main.js)
-- Webpack 配置：[C:\Users\ASUS\Desktop\demo1\webpack.config.js](C:\Users\ASUS\Desktop\demo1\webpack.config.js)
-- 桌面打包脚本：[C:\Users\ASUS\Desktop\demo1\packaging\build.js](C:\Users\ASUS\Desktop\demo1\packaging\build.js)
+- 2D 页面入口：src\external.js
+- 3D 页面入口：src\main.js
+- Electron 主进程：electron-main.js
+- Webpack 配置：webpack.config.js
+- 桌面打包脚本：packaging\build.js
 
 硬件输入相关模块：
 
-- 串口会话与重连逻辑：[C:\Users\ASUS\Desktop\demo1\src\hardware\serialSession.js](C:\Users\ASUS\Desktop\demo1\src\hardware\serialSession.js)
-- 硬件波形绘制逻辑：[C:\Users\ASUS\Desktop\demo1\src\hardware\serialWaveRenderer.js](C:\Users\ASUS\Desktop\demo1\src\hardware\serialWaveRenderer.js)
+- 串口会话与重连逻辑：src\hardware\serialSession.js
+- 硬件波形绘制逻辑：src\hardware\serialWaveRenderer.js
 
 ## 页面说明
 
@@ -65,8 +65,6 @@
 - npm 10.x
 - Windows PowerShell
 
-如果当前终端中 `npm` 无法识别，请先把 Node 安装目录加入 `PATH`，或直接使用 `npm.cmd` 的完整路径执行命令。
-
 ## 开发命令
 
 启动 Web 开发服务：
@@ -103,11 +101,6 @@ npm run build
 - Webpack 输出使用 content hash 文件名
 - `internal` 页的非首屏模块已改为动态导入
 - 构建产物会自动注入新的 hashed 资源名
-
-这意味着：
-
-- 线上可安全配合 Nginx 的 gzip 与长期缓存策略
-- 新版本发布时会因为文件名变化而自动拉取新资源
 
 ## 3D 首屏加载优化
 
