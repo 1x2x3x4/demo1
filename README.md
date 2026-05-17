@@ -18,7 +18,7 @@
 
 主要入口与关键文件：
 
-- 2D 页面入口：[C:\Users\ASUS\Desktop\demo1\src\external.js](C:\Users\ASUS\Desktop\demo1\src\external.js)
+- 2D 页面入口：demo1\src\external.js
 - 3D 页面入口：[C:\Users\ASUS\Desktop\demo1\src\main.js](C:\Users\ASUS\Desktop\demo1\src\main.js)
 - Electron 主进程：[C:\Users\ASUS\Desktop\demo1\electron-main.js](C:\Users\ASUS\Desktop\demo1\electron-main.js)
 - Webpack 配置：[C:\Users\ASUS\Desktop\demo1\webpack.config.js](C:\Users\ASUS\Desktop\demo1\webpack.config.js)
